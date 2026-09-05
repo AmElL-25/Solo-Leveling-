@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>El Sistema — Misiones Diarias</title>
+<meta name="description" content="Registro diario de misiones con progresión de jugador: experiencia, niveles, rangos y estadísticas.">
+<meta name="theme-color" content="#04070f">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="iconos/icono.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="iconos/icono.svg">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+<div class="rejilla" aria-hidden="true"></div>
+
+<div class="marco">
+
+  <header class="cabecera">
+    <div class="cabecera__marca">
+      <span class="cabecera__glifo" aria-hidden="true">&#10023;</span>
+      <div>
+        <h1>EL SISTEMA</h1>
+        <p class="tenue">Solo el que cumple, asciende.</p>
+      </div>
+    </div>
+    <div class="cabecera__reloj">
+      <strong id="reloj">--:--</strong>
+      <small>para medianoche</small>
+    </div>
+  </header>
+
+  <!-- Ventana de estado: siempre visible, sobre las pestañas -->
+  <section class="ventana" aria-label="Estado del jugador">
+    <div class="ventana__fila">
+      <p class="ventana__nombre">
+        <span id="nombre-jugador">Jugador</span>
+        <button id="btn-nombre" class="icono" type="button" title="Cambiar nombre" aria-label="Cambiar nombre">&#9998;</button>
+      </p>
+      <p class="rango" id="rango" title="Rango"><small>RANGO</small>E</p>
+    </div>
+
+    <div class="ventana__nivel">
+      <span class="etiqueta">NIVEL</span>
+      <span class="nivel" id="nivel">1</span>
+    </div>
+
+    <div class="barra barra--xp">
+      <div class="barra__relleno" id="xp-barra"></div>
+      <span class="barra__texto" id="xp-texto">0 / 100 XP</span>
+    </div>
+
+    <ul class="metricas">
+      <li><strong id="racha">0</strong><small>racha</small></li>
+      <li><strong id="mejor-racha">0</strong><small>récord</small></li>
+      <li><strong id="dias">0</strong><small>días</small></li>
+      <li><strong id="puntos">0</strong><small>puntos</small></li>
+    </ul>
+  </section>
+
+  <nav class="pestanas" role="tablist" aria-label="Secciones">
+    <button class="pestana" role="tab" data-tab="mision" aria-selected="true" aria-controls="tab-mision">MISIÓN</button>
+    <button class="pestana" role="tab" data-tab="estado" aria-selected="false" aria-controls="tab-estado">ESTADO</button>
+    <button class="pestana" role="tab" data-tab="ajustes" aria-selected="false" aria-controls="tab-ajustes">AJUSTES</button>
+  </nav>
+
+  <main>
+    <section class="panel" id="tab-mision" role="tabpanel" aria-label="Misión diaria">
+      <div class="panel__cabecera">
+        <h2>MISIÓN DIARIA</h2>
+        <span class="insignia" id="dia-porcentaje">0%</span>
+      </div>
+      <p class="alerta" id="aviso-diaria">Completa todas las misiones antes de medianoche o serás penalizado.</p>
+
+      <div class="misiones" id="lista-misiones"></div>
+
+      <div class="acciones">
+        <button class="boton boton--primario" id="btn-completar" type="button" disabled>RECLAMAR RECOMPENSA</button>
+        <button class="boton" id="btn-nueva" type="button">＋ NUEVA MISIÓN</button>
+      </div>
+    </section>
+
+    <section class="panel" id="tab-estado" role="tabpanel" aria-label="Estado y estadísticas" hidden>
+      <div class="panel__cabecera">
+        <h2>ESTADÍSTICAS</h2>
+        <span class="insignia" id="insignia-puntos">0 puntos</span>
+      </div>
+      <p class="tenue" id="aviso-puntos">Sube de nivel para conseguir puntos que repartir.</p>
+      <div class="stats" id="lista-stats"></div>
+
+      <div class="panel__cabecera panel__cabecera--separada">
+        <h2>HISTORIAL</h2>
+      </div>
+      <div class="historial" id="historial"></div>
+      <p class="tenue leyenda">
+        <span class="muestra muestra--ok"></span> completada
+        <span class="muestra muestra--parcial"></span> incompleta
+        <span class="muestra muestra--vacia"></span> sin registro
+      </p>
+    </section>
+
+    <section class="panel" id="tab-ajustes" role="tabpanel" aria-label="Ajustes" hidden>
+      <h2>AJUSTES</h2>
+
+      <label class="opcion">
+        <input type="checkbox" id="ajuste-sonido">
+        <span>Sonido del Sistema</span>
+      </label>
+
+      <div class="panel__cabecera panel__cabecera--separada"><h2>DATOS</h2></div>
+      <p class="tenue">Tu progreso se guarda solo en este dispositivo. Descarga una copia de vez en cuando para no perderlo.</p>
+      <div class="acciones acciones--columna">
+        <button class="boton" id="btn-exportar" type="button">DESCARGAR COPIA</button>
+        <button class="boton" id="btn-importar" type="button">RESTAURAR COPIA</button>
+        <button class="boton boton--peligro" id="btn-reiniciar" type="button">REINICIAR TODO</button>
+      </div>
+      <input type="file" id="archivo-importar" accept="application/json,.json" hidden>
+
+      <p class="tenue leyenda">Proyecto personal inspirado en la estética de las novelas de progresión. Sin conexión, sin cuentas, sin anuncios.</p>
+    </section>
+  </main>
+</div>
+
+<!-- Alta y edición de misiones -->
+<dialog id="dlg-mision" class="dialogo">
+  <form id="form-mision" method="dialog">
+    <h2 id="dlg-titulo">NUEVA MISIÓN</h2>
+    <input type="hidden" id="campo-id">
+
+    <label>Nombre
+      <input type="text" id="campo-nombre" maxlength="40" required placeholder="Leer, meditar, correr…">
+    </label>
+
+    <label>Tipo
+      <select id="campo-tipo">
+        <option value="contador">Contador (repeticiones, km, minutos…)</option>
+        <option value="checkbox">Sencilla (hecho / no hecho)</option>
+      </select>
+    </label>
+
+    <div class="fila-campos" id="campos-contador">
+      <label>Objetivo
+        <input type="number" id="campo-objetivo" min="1" step="0.5" value="100">
+      </label>
+      <label>Unidad
+        <input type="text" id="campo-unidad" maxlength="10" placeholder="reps" value="reps">
+      </label>
+      <label>Paso
+        <input type="number" id="campo-paso" min="0.5" step="0.5" value="10">
+      </label>
+    </div>
+
+    <div class="fila-campos">
+      <label>Experiencia
+        <input type="number" id="campo-xp" min="1" max="999" step="1" value="40">
+      </label>
+      <label>Estadística
+        <select id="campo-stat"></select>
+      </label>
+    </div>
+
+    <div class="acciones">
+      <button class="boton boton--primario" value="guardar" type="submit">GUARDAR</button>
+      <button class="boton" value="cancelar" type="button" id="btn-cancelar-mision">CANCELAR</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Ventana de notificación del Sistema -->
+<div class="notificacion" id="notificacion" role="alertdialog" aria-modal="true" aria-labelledby="noti-titulo" hidden>
+  <div class="notificacion__ventana" id="noti-ventana">
+    <p class="notificacion__cabecera">&#9888; NOTIFICACIÓN</p>
+    <h2 id="noti-titulo">TÍTULO</h2>
+    <div id="noti-cuerpo"></div>
+    <button class="boton boton--primario" id="noti-aceptar" type="button">ACEPTAR</button>
+  </div>
+</div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

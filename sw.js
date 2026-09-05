@@ -1,7 +1,7 @@
 /* Service worker: guarda la app en caché para que funcione sin conexión.
    Sube CACHE al cambiar cualquier archivo para forzar la actualización. */
 
-const CACHE = 'sistema-v1';
+const CACHE = 'sistema-v2';
 
 const ARCHIVOS = [
   './',
@@ -13,8 +13,12 @@ const ARCHIVOS = [
   './js/ui.js',
   './manifest.webmanifest',
   './iconos/icono.svg',
+  './iconos/icono-app.svg',
+  './iconos/favicon-32.png',
+  './iconos/icono-180.png',
   './iconos/icono-192.png',
   './iconos/icono-512.png',
+  './iconos/icono-maskable-512.png',
 ];
 
 self.addEventListener('install', (evento) => {

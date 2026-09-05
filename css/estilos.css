@@ -39,6 +39,11 @@ body {
   letter-spacing: 0.02em;
   -webkit-text-size-adjust: 100%;
   overflow-x: hidden;
+  /* Comportamiento de app instalada: sin resaltado azul al tocar,
+     sin zoom por doble toque y sin rebote de recarga al arrastrar. */
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  overscroll-behavior-y: contain;
 }
 
 /* Rejilla de fondo, puramente decorativa */
@@ -59,7 +64,11 @@ body {
   z-index: 1;
   max-width: 960px;
   margin: 0 auto;
-  padding: 18px 14px calc(36px + env(safe-area-inset-bottom));
+  /* env(safe-area-*) deja libre la muesca y la barra inferior del iPhone
+     cuando la app se abre a pantalla completa desde la pantalla de inicio. */
+  padding:
+    calc(18px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right))
+    calc(36px + env(safe-area-inset-bottom)) calc(14px + env(safe-area-inset-left));
 }
 
 h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: 0.09em; }
@@ -271,6 +280,8 @@ p { margin: 0; }
 
 .boton {
   font: inherit;
+  -webkit-user-select: none;
+  user-select: none;
   font-size: 0.74rem;
   letter-spacing: 0.12em;
   padding: 11px 14px;
@@ -406,7 +417,7 @@ p { margin: 0; }
 /* ------------------------------ responsive ------------------------------ */
 
 @media (min-width: 760px) {
-  .marco { padding-top: 28px; }
+  .marco { padding-top: calc(28px + env(safe-area-inset-top)); }
   .misiones { grid-template-columns: repeat(2, 1fr); }
   .stats { grid-template-columns: repeat(2, 1fr); }
   .historial { grid-template-columns: repeat(15, 1fr); }

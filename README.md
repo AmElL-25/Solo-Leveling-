@@ -33,14 +33,52 @@ python3 -m http.server 8000
 # abre http://localhost:8000
 ```
 
-**En el móvil (recomendado, para el uso diario):** publícala en GitHub Pages y añádela a
-la pantalla de inicio.
+**En el móvil (recomendado, para el uso diario):** publícala en Vercel o en GitHub Pages y
+añádela a la pantalla de inicio. Con Vercel el repositorio puede seguir siendo privado.
+
+### Publicar en Vercel
+
+1. Entra en [vercel.com](https://vercel.com) con tu cuenta de GitHub.
+2. **Add New… → Project**, elige `POLOS-DRAUSSE` e **Import**.
+3. No hay nada que configurar: es un sitio estático, sin framework ni build. Pulsa **Deploy**.
+4. Cada `git push` a la rama de producción vuelve a desplegar la app automáticamente.
+
+### Publicar en GitHub Pages (requiere repositorio público en cuentas gratuitas)
 
 1. En GitHub: **Settings → Pages → Source: Deploy from a branch**, elige la rama y la
    carpeta `/ (root)`, y guarda.
-2. Abre la URL que aparece (`https://<usuario>.github.io/<repo>/`) en el móvil.
-3. Menú del navegador → **Añadir a la pantalla de inicio**. Se abrirá a pantalla completa,
-   con su icono, y seguirá funcionando sin cobertura.
+2. Abre la URL que aparece (`https://<usuario>.github.io/<repo>/`).
+
+## Instalarla en el móvil
+
+La app es una PWA: se instala desde el navegador, sin tiendas de aplicaciones.
+
+**iPhone y iPad (obligatorio Safari; Chrome en iOS no puede instalar apps).**
+
+1. Abre la URL en **Safari**.
+2. Toca el botón **Compartir** (el cuadrado con la flecha hacia arriba, abajo en el centro).
+3. Baja en la lista y toca **Añadir a pantalla de inicio**.
+4. Verás el nombre *El Sistema* y su icono. Toca **Añadir**.
+
+**Android (Chrome, Edge, Samsung Internet…).**
+
+1. Abre la URL en Chrome.
+2. Aparecerá una barra **"Instalar aplicación"**; si no sale, abre el menú **⋮** y elige
+   **Instalar aplicación** o **Añadir a pantalla de inicio**.
+3. Confirma con **Instalar**.
+
+En ambos casos queda en la pantalla de inicio con su icono, se abre a pantalla completa
+(sin barra de direcciones) y funciona sin conexión.
+
+### Comprobar que funciona como PWA
+
+- Ábrela desde el icono: **no debe verse la barra de direcciones del navegador**.
+- Activa el modo avión y ábrela: tiene que cargar igual (service worker).
+- En Chrome de escritorio: **F12 → Application → Manifest** (nombre, iconos, colores y
+  `display: standalone`) y **Application → Service Workers** (debe decir *activated and
+  running*). En la barra de direcciones aparece el icono de instalar.
+- Automático, contra la URL publicada:
+  `BASE=https://tu-app.vercel.app/ node pruebas/pwa.mjs`
 
 ## Tus datos
 
@@ -59,8 +97,11 @@ js/sistema.js           Reglas del juego (XP, niveles, rangos, racha, penalizaci
 js/ui.js                Pintado del DOM y ventanas de notificación
 js/app.js               Arranque, eventos y temporizadores
 sw.js                   Service worker: caché para el modo sin conexión
-manifest.webmanifest    Metadatos para instalarla como app
+manifest.webmanifest    Metadatos para instalarla como app (nombre, iconos, colores)
+vercel.json             Cabeceras del despliegue (tipo del manifest, caché del worker)
+iconos/                 Icono en SVG y los PNG de la pantalla de inicio
 pruebas/e2e.mjs         Prueba automática del ciclo completo (opcional)
+pruebas/pwa.mjs         Prueba automática de los requisitos de PWA (opcional)
 ```
 
 Para pasar la prueba automática, con el servidor local en marcha:

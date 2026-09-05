@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="El Sistema">
+  <defs>
+    <radialGradient id="halo" cx="50%" cy="42%" r="72%">
+      <stop offset="0%" stop-color="#1f6fa8" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="#04070f" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="brillo" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="12" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Sin marco pegado al borde: iOS redondea las esquinas y Android recorta en círculo,
+       así que el dibujo se queda dentro de la zona segura central. -->
+  <rect width="512" height="512" fill="#04070f"/>
+  <rect width="512" height="512" fill="url(#halo)"/>
+  <path d="M256 152 L360 330 H298 V392 H214 V330 H152 Z" fill="#5fd3ff" filter="url(#brillo)"/>
+</svg>

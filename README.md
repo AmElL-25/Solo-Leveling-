@@ -24,14 +24,17 @@ funciona sin conexión y todo tu progreso se guarda en tu propio dispositivo.
 
 ## Cómo usarla
 
-**En el ordenador:** abre `index.html` con doble clic. Ya está.
-
-**Con servidor local** (necesario para probar el modo sin conexión):
+**En el ordenador**, desde la carpeta del proyecto:
 
 ```bash
 python3 -m http.server 8000
 # abre http://localhost:8000
 ```
+
+Hace falta un servidor local: el código está repartido en módulos de JavaScript y los
+navegadores los bloquean por CORS si abres `index.html` con doble clic (`file://`).
+Cualquier servidor estático vale (`npx serve`, `php -S localhost:8000`, la extensión
+*Live Server* de VS Code…).
 
 **En el móvil (recomendado, para el uso diario):** publícala en Vercel o en GitHub Pages y
 añádela a la pantalla de inicio. Con Vercel el repositorio puede seguir siendo privado.

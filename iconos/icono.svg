@@ -1,26 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="El Sistema">
-  <defs>
-    <radialGradient id="halo" cx="50%" cy="38%" r="70%">
-      <stop offset="0%" stop-color="#1f6fa8" stop-opacity="0.75"/>
-      <stop offset="100%" stop-color="#04070f" stop-opacity="0"/>
-    </radialGradient>
-    <linearGradient id="borde" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#a9ecff"/>
-      <stop offset="100%" stop-color="#1f6fa8"/>
-    </linearGradient>
-    <filter id="brillo" x="-40%" y="-40%" width="180%" height="180%">
-      <feGaussianBlur stdDeviation="10" result="b"/>
-      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
-  </defs>
-
+  <!-- Colores planos a propósito: a tamaño de icono se ve más nítido y el PNG
+       exportado pesa unos pocos kilobytes en lugar de decenas. -->
   <rect width="512" height="512" fill="#04070f"/>
-  <rect width="512" height="512" fill="url(#halo)"/>
-
-  <!-- ventana del Sistema con las esquinas recortadas -->
-  <path d="M96 56 H456 V400 L400 456 H56 V112 Z" fill="rgba(9,20,38,0.85)"
-        stroke="url(#borde)" stroke-width="8" filter="url(#brillo)"/>
-
-  <!-- flecha de ascenso -->
-  <path d="M256 150 L342 300 H286 V376 H226 V300 H170 Z" fill="#5fd3ff" filter="url(#brillo)"/>
+  <rect x="24" y="24" width="464" height="464" fill="#0a1526"/>
+  <path d="M96 56 H456 V400 L400 456 H56 V112 Z" fill="#0d1e37" stroke="#5fd3ff" stroke-width="8"/>
+  <path d="M256 150 L342 300 H286 V376 H226 V300 H170 Z" fill="#5fd3ff"/>
 </svg>

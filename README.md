@@ -95,19 +95,37 @@ a salvo.
 
 ## Estructura
 
+El código se organiza por **lo que hace el juego** (arquitectura *screaming*), no por
+capas técnicas: para tocar las misiones vas a `js/misiones/`, no a buscar entre un
+"modelo" o un "controlador" genéricos. Cada feature tiene, cuando lo necesita,
+`reglas.js` (funciones puras del juego, sin DOM) y `vista.js` (pintado y referencias
+al DOM):
+
 ```
-index.html              Estructura de la interfaz
-css/estilos.css         Tema holográfico azul, móvil primero
-js/estado.js            Modelo de datos, normalización y guardado en localStorage
-js/sistema.js           Reglas del juego (XP, niveles, rangos, racha, penalización)
-js/ui.js                Pintado del DOM y ventanas de notificación
-js/app.js               Arranque, eventos y temporizadores
-sw.js                   Service worker: caché para el modo sin conexión
-manifest.webmanifest    Metadatos para instalarla como app (nombre, iconos, colores)
-vercel.json             Cabeceras del despliegue (tipo del manifest, caché del worker)
-iconos/                 Icono en SVG y los PNG de la pantalla de inicio
-pruebas/e2e.mjs         Prueba automática del ciclo completo (opcional)
-pruebas/pwa.mjs         Prueba automática de los requisitos de PWA (opcional)
+index.html                    Estructura de la interfaz
+css/estilos.css                Tema holográfico azul, móvil primero
+
+js/app.js                      Raíz de composición: arranque, eventos, temporizadores
+js/progreso.js                 Partida guardada: agrega el estado de cada feature y lo
+                                persiste en localStorage
+
+js/jugador/                    Nivel, experiencia, rango y estadísticas
+js/misiones/                   Alta, edición, borrado y progreso de las misiones
+js/ciclo-diario/                Recompensa, racha, cambio de día y penalización
+js/historial/                  Mapa de calor de los últimos 30 días
+js/ajustes/                    Sonido, copia de seguridad y reinicio
+js/notificaciones/             Ventanas emergentes del Sistema y el pitido
+
+js/nucleo/                     Utilidades técnicas sin reglas de juego:
+                                fecha.js (fechas, id, reloj) y
+                                almacenamiento.js (localStorage con manejo de errores)
+
+sw.js                          Service worker: caché para el modo sin conexión
+manifest.webmanifest           Metadatos para instalarla como app (nombre, iconos, colores)
+vercel.json                    Cabeceras del despliegue (tipo del manifest, caché del worker)
+iconos/                        Icono en SVG y los PNG de la pantalla de inicio
+pruebas/e2e.mjs                Prueba automática del ciclo completo (opcional)
+pruebas/pwa.mjs                Prueba automática de los requisitos de PWA (opcional)
 ```
 
 Para pasar la prueba automática, con el servidor local en marcha:
@@ -116,8 +134,9 @@ Para pasar la prueba automática, con el servidor local en marcha:
 npm install playwright && node pruebas/e2e.mjs
 ```
 
-Los números del juego están todos arriba de `js/sistema.js` (`PUNTOS_POR_NIVEL`,
-`BONO_DIA`, `PENALIZACION_XP` y la curva `xpNecesaria`), por si quieres afinar la dificultad.
+Los números del juego están todos arriba de `js/ciclo-diario/reglas.js` (`BONO_DIA`,
+`PENALIZACION_XP`), `js/jugador/reglas.js` (`PUNTOS_POR_NIVEL` y la curva `xpNecesaria`),
+por si quieres afinar la dificultad.
 
 > Proyecto personal y sin ánimo de lucro, inspirado en la estética de las novelas de
 > progresión. No está asociado a ninguna obra ni a sus autores.

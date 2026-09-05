@@ -1,23 +1,41 @@
 /* ==========================================================================
-   Arranque y cableado: carga el estado, escucha al jugador y vuelve a pintar.
+   Raíz de composición: carga el progreso, cablea los eventos de cada
+   feature y vuelve a pintar. No contiene reglas del juego ni pintado
+   propio; solo conecta lo que ya define cada feature.
    ========================================================================== */
 
+import { cargar, guardar, borrar, estadoInicial, exportar, importar } from './progreso.js';
+import { fechaHoy } from './nucleo/fecha.js';
+import { notificar, sonar } from './notificaciones/notificaciones.js';
+
+import { xpNecesaria, asignarPunto } from './jugador/reglas.js';
+import { elJugador, renderVentanaEstado, renderStats } from './jugador/vista.js';
+
+import { ajustarProgreso, fijarProgreso, guardarMision, eliminarMision } from './misiones/reglas.js';
 import {
-  STATS, cargar, guardar, borrar, estadoInicial, exportar, importar, idNuevo, fechaHoy,
-} from './estado.js';
-import {
-  sincronizarDia, completarDia, ajustarProgreso, fijarProgreso,
-  asignarPunto, recompensaDia, xpNecesaria,
-} from './sistema.js';
-import { render, renderReloj, notificar, sonar, el } from './ui.js';
+  elMisiones, renderMisiones, abrirDialogoMision, cerrarDialogoMision, leerFormularioMision,
+} from './misiones/vista.js';
+
+import { sincronizarDia, completarDia, recompensaDia } from './ciclo-diario/reglas.js';
+import { elCicloDiario, renderReloj, renderAvisoDiario } from './ciclo-diario/vista.js';
+
+import { renderHistorial } from './historial/vista.js';
+import { elAjustes, renderAjustes } from './ajustes/vista.js';
 
 let estado = cargar();
 
-const $ = (selector) => document.querySelector(selector);
+function render() {
+  renderVentanaEstado(estado.jugador);
+  renderStats(estado.jugador);
+  renderMisiones(estado.misiones);
+  renderAvisoDiario(estado);
+  renderHistorial(estado);
+  renderAjustes(estado.ajustes);
+}
 
 function actualizar() {
   guardar(estado);
-  render(estado);
+  render();
 }
 
 function pitido(tipo) {
@@ -47,7 +65,7 @@ function comprobarDia() {
 function avisarMisionDiaria() {
   if (estado.dia.avisado || estado.dia.completado) return;
   estado.dia.avisado = true;
-  const { total } = recompensaDia(estado);
+  const { total } = recompensaDia(estado.misiones);
   notificar({
     titulo: 'HA LLEGADO LA MISIÓN DIARIA',
     lineas: [
@@ -67,14 +85,14 @@ document.querySelectorAll('.pestana').forEach((boton) => {
     document.querySelectorAll('.pestana').forEach((otro) => {
       const activo = otro === boton;
       otro.setAttribute('aria-selected', String(activo));
-      $(`#tab-${otro.dataset.tab}`).hidden = !activo;
+      document.querySelector(`#tab-${otro.dataset.tab}`).hidden = !activo;
     });
   });
 });
 
 /* ------------------------------ misiones ------------------------------ */
 
-el.misiones.addEventListener('click', (evento) => {
+elMisiones.lista.addEventListener('click', (evento) => {
   const boton = evento.target.closest('button[data-accion]');
   if (!boton) return;
 
@@ -84,20 +102,20 @@ el.misiones.addEventListener('click', (evento) => {
 
   switch (boton.dataset.accion) {
     case 'mas':
-      ajustarProgreso(estado, id, mision.paso);
+      ajustarProgreso(estado.misiones, id, mision.paso);
       break;
     case 'menos':
-      ajustarProgreso(estado, id, -mision.paso);
+      ajustarProgreso(estado.misiones, id, -mision.paso);
       break;
     case 'alternar':
-      fijarProgreso(estado, id, mision.progreso >= 1 ? 0 : 1);
+      fijarProgreso(estado.misiones, id, mision.progreso >= 1 ? 0 : 1);
       break;
     case 'editar':
-      abrirDialogo(mision);
+      abrirDialogoMision(mision);
       return;
     case 'borrar':
       if (!confirm(`¿Eliminar la misión "${mision.nombre}"?`)) return;
-      estado.misiones = estado.misiones.filter((m) => m.id !== id);
+      eliminarMision(estado.misiones, id);
       break;
     default:
       return;
@@ -105,15 +123,15 @@ el.misiones.addEventListener('click', (evento) => {
   actualizar();
 });
 
-el.misiones.addEventListener('change', (evento) => {
+elMisiones.lista.addEventListener('change', (evento) => {
   const campo = evento.target.closest('input[data-accion="fijar"]');
   if (!campo) return;
   const id = campo.closest('[data-id]')?.dataset.id;
-  fijarProgreso(estado, id, Number(campo.value));
+  fijarProgreso(estado.misiones, id, Number(campo.value));
   actualizar();
 });
 
-$('#btn-completar').addEventListener('click', () => {
+elCicloDiario.btnCompletar.addEventListener('click', () => {
   const resultado = completarDia(estado);
   if (!resultado) return;
 
@@ -144,77 +162,25 @@ $('#btn-completar').addEventListener('click', () => {
 
 /* ------------------------- alta y edición de misiones ------------------------- */
 
-const dlg = $('#dlg-mision');
-const campos = {
-  id: $('#campo-id'),
-  nombre: $('#campo-nombre'),
-  tipo: $('#campo-tipo'),
-  objetivo: $('#campo-objetivo'),
-  unidad: $('#campo-unidad'),
-  paso: $('#campo-paso'),
-  xp: $('#campo-xp'),
-  stat: $('#campo-stat'),
-};
+elMisiones.btnNueva.addEventListener('click', () => abrirDialogoMision());
+elMisiones.btnCancelar.addEventListener('click', () => cerrarDialogoMision());
 
-campos.stat.innerHTML = STATS.map((s) => `<option value="${s.id}">${s.nombre}</option>`).join('');
-
-function alternarCamposContador() {
-  $('#campos-contador').hidden = campos.tipo.value === 'checkbox';
-}
-campos.tipo.addEventListener('change', alternarCamposContador);
-
-function abrirDialogo(mision = null) {
-  $('#dlg-titulo').textContent = mision ? 'EDITAR MISIÓN' : 'NUEVA MISIÓN';
-  campos.id.value = mision?.id ?? '';
-  campos.nombre.value = mision?.nombre ?? '';
-  campos.tipo.value = mision?.tipo ?? 'contador';
-  campos.objetivo.value = mision?.objetivo ?? 100;
-  campos.unidad.value = mision?.unidad ?? 'reps';
-  campos.paso.value = mision?.paso ?? 10;
-  campos.xp.value = mision?.xp ?? 40;
-  campos.stat.value = mision?.stat ?? 'fuerza';
-  alternarCamposContador();
-  dlg.showModal();
-}
-
-$('#btn-nueva').addEventListener('click', () => abrirDialogo());
-$('#btn-cancelar-mision').addEventListener('click', () => dlg.close());
-
-$('#form-mision').addEventListener('submit', (evento) => {
+elMisiones.formMision.addEventListener('submit', (evento) => {
   evento.preventDefault();
+  const datos = leerFormularioMision();
+  if (!datos.nombre) return;
 
-  const nombre = campos.nombre.value.trim();
-  if (!nombre) return;
-
-  const esContador = campos.tipo.value === 'contador';
-  const datos = {
-    nombre,
-    tipo: esContador ? 'contador' : 'checkbox',
-    objetivo: esContador ? Math.max(0.5, Number(campos.objetivo.value) || 1) : 1,
-    unidad: esContador ? campos.unidad.value.trim() : '',
-    paso: esContador ? Math.max(0.5, Number(campos.paso.value) || 1) : 1,
-    xp: Math.min(999, Math.max(1, Math.round(Number(campos.xp.value) || 20))),
-    stat: campos.stat.value,
-  };
-
-  const existente = estado.misiones.find((m) => m.id === campos.id.value);
-  if (existente) {
-    Object.assign(existente, datos);
-    existente.progreso = Math.min(existente.progreso, existente.objetivo);
-  } else {
-    estado.misiones.push({ id: idNuevo(), progreso: 0, ...datos });
-  }
-
-  dlg.close();
+  guardarMision(estado.misiones, datos);
+  cerrarDialogoMision();
   actualizar();
 });
 
 /* ------------------------------ estadísticas ------------------------------ */
 
-el.stats.addEventListener('click', (evento) => {
+elJugador.stats.addEventListener('click', (evento) => {
   const boton = evento.target.closest('button[data-stat]');
   if (!boton) return;
-  if (asignarPunto(estado, boton.dataset.stat)) {
+  if (asignarPunto(estado.jugador, boton.dataset.stat)) {
     pitido('nivel');
     actualizar();
   }
@@ -222,20 +188,20 @@ el.stats.addEventListener('click', (evento) => {
 
 /* ------------------------------ ajustes ------------------------------ */
 
-$('#btn-nombre').addEventListener('click', () => {
+elJugador.btnNombre.addEventListener('click', () => {
   const nombre = prompt('Nombre del jugador:', estado.jugador.nombre);
   if (nombre === null) return;
   estado.jugador.nombre = nombre.trim().slice(0, 24) || 'Jugador';
   actualizar();
 });
 
-el.sonido.addEventListener('change', () => {
-  estado.ajustes.sonido = el.sonido.checked;
+elAjustes.sonido.addEventListener('change', () => {
+  estado.ajustes.sonido = elAjustes.sonido.checked;
   guardar(estado);
   pitido('aviso');
 });
 
-$('#btn-exportar').addEventListener('click', () => {
+elAjustes.btnExportar.addEventListener('click', () => {
   const blob = new Blob([exportar(estado)], { type: 'application/json' });
   const enlace = document.createElement('a');
   enlace.href = URL.createObjectURL(blob);
@@ -244,9 +210,9 @@ $('#btn-exportar').addEventListener('click', () => {
   URL.revokeObjectURL(enlace.href);
 });
 
-$('#btn-importar').addEventListener('click', () => $('#archivo-importar').click());
+elAjustes.btnImportar.addEventListener('click', () => elAjustes.archivoImportar.click());
 
-$('#archivo-importar').addEventListener('change', async (evento) => {
+elAjustes.archivoImportar.addEventListener('change', async (evento) => {
   const archivo = evento.target.files?.[0];
   if (!archivo) return;
   try {
@@ -264,7 +230,7 @@ $('#archivo-importar').addEventListener('change', async (evento) => {
   evento.target.value = '';
 });
 
-$('#btn-reiniciar').addEventListener('click', () => {
+elAjustes.btnReiniciar.addEventListener('click', () => {
   if (!confirm('Se borrará todo tu progreso: nivel, estadísticas, racha e historial. ¿Continuar?')) return;
   borrar();
   estado = estadoInicial();

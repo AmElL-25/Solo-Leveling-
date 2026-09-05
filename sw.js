@@ -1,16 +1,27 @@
 /* Service worker: guarda la app en caché para que funcione sin conexión.
    Sube CACHE al cambiar cualquier archivo para forzar la actualización. */
 
-const CACHE = 'sistema-v3';
+const CACHE = 'sistema-v4';
 
 const ARCHIVOS = [
   './',
   './index.html',
   './css/estilos.css',
   './js/app.js',
-  './js/estado.js',
-  './js/sistema.js',
-  './js/ui.js',
+  './js/progreso.js',
+  './js/nucleo/fecha.js',
+  './js/nucleo/almacenamiento.js',
+  './js/notificaciones/notificaciones.js',
+  './js/jugador/reglas.js',
+  './js/jugador/vista.js',
+  './js/misiones/reglas.js',
+  './js/misiones/vista.js',
+  './js/ciclo-diario/reglas.js',
+  './js/ciclo-diario/vista.js',
+  './js/historial/reglas.js',
+  './js/historial/vista.js',
+  './js/ajustes/reglas.js',
+  './js/ajustes/vista.js',
   './manifest.webmanifest',
   './iconos/icono.svg',
   './iconos/icono-app.svg',

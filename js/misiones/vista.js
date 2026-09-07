@@ -4,6 +4,8 @@
    recompensas: eso es cosa del ciclo diario.
    ========================================================================== */
 
+import { t } from '../modo/vista.js';
+
 import { STATS } from '../jugador/reglas.js';
 import { INDICADORES, buscarIndicador } from '../negocio/catalogo.js';
 import { misionCompleta, progresoMision, porcentajeDia } from './reglas.js';
@@ -104,7 +106,7 @@ function alternarCamposContador() {
 campos.tipo.addEventListener('change', alternarCamposContador);
 
 export function abrirDialogoMision(mision = null) {
-  $('#dlg-titulo').textContent = mision ? 'EDITAR MISIÓN' : 'NUEVA MISIÓN';
+  $('#dlg-titulo').textContent = mision ? t('dlgEditar') : t('dlgNueva');
   campos.id.value = mision?.id ?? '';
   campos.nombre.value = mision?.nombre ?? '';
   campos.tipo.value = mision?.tipo ?? 'contador';

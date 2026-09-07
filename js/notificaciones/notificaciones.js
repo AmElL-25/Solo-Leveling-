@@ -8,12 +8,44 @@ import { sonar } from '../sonido/sintetizador.js';
 
 const $ = (selector) => document.querySelector(selector);
 
+const escapar = (texto) => String(texto).replace(/[&<>"']/g, (c) => (
+  { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+));
+
 const el = {
   notificacion: $('#notificacion'),
   notiTitulo: $('#noti-titulo'),
   notiCuerpo: $('#noti-cuerpo'),
   notiAceptar: $('#noti-aceptar'),
+  avisos: $('#avisos'),
 };
+
+/* En SALES los avisos no interrumpen: salen arriba y se van solos. */
+let discretos = false;
+export function configurarAvisos({ discreto }) {
+  discretos = Boolean(discreto);
+}
+
+const DURACION_AVISO = 5000;
+
+function flotante(aviso) {
+  const caja = document.createElement('div');
+  caja.className = `aviso ${aviso.tipo === 'peligro' ? 'aviso--peligro' : ''}`;
+  caja.innerHTML = `
+    <p class="aviso__titulo">${escapar(aviso.titulo)}</p>
+    ${(aviso.lineas ?? [])
+      .map((linea) => `<p class="aviso__linea">${escapar(typeof linea === 'string' ? linea : linea.texto)}</p>`)
+      .join('')}`;
+
+  const cerrar = () => {
+    caja.classList.add('aviso--saliendo');
+    setTimeout(() => caja.remove(), 250);
+  };
+  caja.addEventListener('click', cerrar);
+  setTimeout(cerrar, DURACION_AVISO);
+
+  el.avisos.append(caja);
+}
 
 const cola = [];
 let mostrando = false;
@@ -37,6 +69,13 @@ function siguiente() {
   if (!aviso) {
     mostrando = false;
     el.notificacion.hidden = true;
+    return;
+  }
+
+  // Modo discreto: se sueltan todos seguidos, sin bloquear la pantalla.
+  if (discretos) {
+    flotante(aviso);
+    siguiente();
     return;
   }
 

@@ -4,6 +4,8 @@
    semana anterior, tasa de conversión y avance de la cuota del mes.
    ========================================================================== */
 
+import { t } from '../modo/vista.js';
+
 import { INDICADORES, buscarIndicador } from './catalogo.js';
 import { resumenSemana, resumenMes, progresoCuota, objetivosDelDia } from './reglas.js';
 

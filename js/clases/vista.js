@@ -2,6 +2,8 @@
    Feature: clases — pintado del bloque de clase y del diálogo de elección.
    ========================================================================== */
 
+import { t } from '../modo/vista.js';
+
 import { CLASES, NIVEL_CAMBIO_CLASE, buscarClase } from './catalogo.js';
 import { puedeCambiarClase } from './reglas.js';
 import { STATS } from '../jugador/reglas.js';
@@ -25,7 +27,7 @@ export const elClases = {
 
 export function renderClase(jugador) {
   const clase = buscarClase(jugador.clase);
-  elClases.etiqueta.textContent = clase ? clase.nombre : 'Sin clase';
+  elClases.etiqueta.textContent = clase ? clase.nombre : t('sinClase');
 
   if (clase) {
     elClases.bloque.innerHTML = `
@@ -38,7 +40,7 @@ export function renderClase(jugador) {
 
   elClases.bloque.innerHTML = puedeCambiarClase(jugador)
     ? `<p class="alerta">Has alcanzado el nivel ${NIVEL_CAMBIO_CLASE}. El Sistema te ofrece una clase.</p>
-       <button class="boton boton--primario" id="btn-clase" type="button" style="width:100%">ELEGIR CLASE</button>`
+       <button class="boton boton--primario" id="btn-clase" type="button" style="width:100%">${t('clasePendiente')}</button>`
     : `<p class="vacio">El cambio de clase se desbloquea al llegar al nivel ${NIVEL_CAMBIO_CLASE}.</p>`;
 }
 

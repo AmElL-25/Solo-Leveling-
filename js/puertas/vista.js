@@ -2,6 +2,8 @@
    Feature: puertas — pintado del desafío del día y sus controles.
    ========================================================================== */
 
+import { t } from '../modo/vista.js';
+
 import { STATS } from '../jugador/reglas.js';
 import { puertaCompleta } from './reglas.js';
 
@@ -24,7 +26,7 @@ export function renderPuerta(puerta) {
 
   if (!puerta) {
     elPuertas.contenedor.innerHTML =
-      '<p class="vacio">Hoy no se ha abierto ninguna puerta. Mañana será otro día.</p>';
+      `<p class="vacio">${t('puertaSinPuerta')}</p>`;
     return;
   }
 
@@ -32,9 +34,9 @@ export function renderPuerta(puerta) {
   const unidad = puerta.unidad ? ` ${escapar(puerta.unidad)}` : '';
 
   const controles = puerta.cerrada
-    ? '<button class="boton boton--hecho" type="button" disabled>PUERTA CERRADA</button>'
+    ? `<button class="boton boton--hecho" type="button" disabled>${t('puertaLista')}</button>`
     : puertaCompleta(puerta)
-      ? '<button class="boton boton--primario" data-accion="cerrar-puerta" type="button">CERRAR LA PUERTA</button>'
+      ? `<button class="boton boton--primario" data-accion="cerrar-puerta" type="button">${t('cerrarPuerta')}</button>`
       : `<button class="boton" data-accion="puerta-menos" type="button" aria-label="Restar">−</button>
          <input class="paso" data-accion="puerta-fijar" type="number" inputmode="decimal" min="0"
                 max="${puerta.objetivo}" step="${puerta.paso}" value="${numero(puerta.progreso)}"
@@ -47,9 +49,7 @@ export function renderPuerta(puerta) {
         <h3>${escapar(puerta.nombre)}</h3>
         <span class="puerta__sello">${escapar(puerta.rango)}</span>
       </div>
-      <p class="tenue">${puerta.cerrada
-        ? 'Has despejado esta puerta.'
-        : 'Desafío opcional: no penaliza si lo dejas pasar, pero la recompensa se pierde a medianoche.'}</p>
+      <p class="tenue">${puerta.cerrada ? t('puertaCerrada') : t('puertaAbierta')}</p>
       <div class="barra barra--mision" style="margin:8px 0">
         <div class="barra__relleno" style="width:${Math.min(100, (puerta.progreso / puerta.objetivo) * 100)}%"></div>
         <span class="barra__texto">${numero(puerta.progreso)} / ${numero(puerta.objetivo)}${unidad}</span>

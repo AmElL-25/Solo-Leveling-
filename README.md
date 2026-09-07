@@ -62,10 +62,27 @@ El juego mide esfuerzo; esta capa mide resultados.
   falta. Se calcula del historial, no de un contador que pueda desincronizarse.
 - **El jefe mide lo comercial.** Conserva su nombre y su barra, pero las misiones de
   resultado le pegan **el doble**: al jefe le duele la venta, no la actividad.
-- **Modo sobrio.** Un interruptor en AJUSTES cambia la app a aspecto de oficina —paleta
-  apagada, sin resplandores, tipografía del sistema y *PANEL* en la cabecera— y silencia
-  sonido y animación de texto mientras está activo, sin tocar tus preferencias. Los datos
-  y las reglas son los mismos.
+## Dos modos: SISTEMA y SALES
+
+La misma app con dos caras, conmutables con el botón de la cabecera. **Mismos datos,
+mismas reglas, mismas secciones**: no desaparece nada, solo cambia cómo se llama y cómo se
+ve.
+
+| | SISTEMA | SALES |
+|---|---|---|
+| Aspecto | Azul holográfico, resplandores, monoespaciada | Paleta de oficina, plano, tipografía del sistema |
+| Avisos | Ventana modal con máquina de escribir y sonido | Barra discreta arriba que se va sola, sin sonido |
+| Vocabulario | Jefe, puerta, castigo, oro, títulos, clase | Objetivo de la semana, oportunidad, plan de recuperación, créditos, reconocimientos, perfil |
+
+**Cómo cambia de modo:**
+
+- **A mano**: el botón de la cabecera (`MODO SALES` / `MODO SISTEMA`) alterna al instante.
+- **Solo**: en AJUSTES puedes activar un horario laboral (días y franja). Dentro de él la
+  app se pone en SALES; fuera, vuelve a SISTEMA. El botón manda hasta el siguiente tramo:
+  si fuerzas SISTEMA a media mañana, aguanta hasta que acabe tu jornada.
+
+El diccionario de términos vive en `js/modo/catalogo.js`: cambiar una palabra es cambiar
+una línea, sin tocar ninguna vista.
 
 ## Cómo usarla
 
@@ -174,6 +191,7 @@ js/jefes/                      Jefe semanal: aparición, daño, victoria y huida
 js/castigo/                    Misión de castigo: asignación, aceptación y deuda
 js/plantillas/                 Sets de misión diaria para distintas vidas
 js/negocio/                    Indicadores, cuadro de mando y cuota
+js/modo/                       Los dos modos: diccionario, horario e interruptor
 js/sonido/                     Sintetizador de los avisos del Sistema
 js/titulos/                    Títulos desbloqueables y el que llevas equipado
 js/clases/                     Cambio de clase y su especialidad

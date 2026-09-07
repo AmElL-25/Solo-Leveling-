@@ -1,22 +1,32 @@
 /* ==========================================================================
    Feature: ajustes. Preferencias del jugador: sonido, efecto de máquina de
-   escribir y aspecto de la app.
+   escribir, modo de la app y horario en el que cambia sola.
    ========================================================================== */
 
-export const TEMAS = ['sistema', 'sobrio'];
+import { normalizarModo, normalizarHorario, normalizarForzado, estadoInicialHorario } from '../modo/reglas.js';
 
 export function estadoInicialAjustes() {
-  return { sonido: true, animaciones: true, tema: 'sistema' };
-}
-
-export function normalizarAjustes(ajustes) {
   return {
-    sonido: ajustes?.sonido !== false,
-    animaciones: ajustes?.animaciones !== false,
-    tema: TEMAS.includes(ajustes?.tema) ? ajustes.tema : 'sistema',
+    sonido: true,
+    animaciones: true,
+    modo: 'sistema',
+    horario: estadoInicialHorario(),
+    forzado: null,
   };
 }
 
-/** En modo sobrio la app no suena ni escribe letra a letra, sin perder tus ajustes. */
-export const sonidoActivo = (ajustes) => ajustes.sonido && ajustes.tema !== 'sobrio';
-export const textoAnimado = (ajustes) => ajustes.animaciones && ajustes.tema !== 'sobrio';
+export function normalizarAjustes(ajustes) {
+  // Antes esto se llamaba "tema" y su valor de oficina era "sobrio".
+  const modo = ajustes?.modo ?? (ajustes?.tema === 'sobrio' ? 'sales' : ajustes?.tema);
+  return {
+    sonido: ajustes?.sonido !== false,
+    animaciones: ajustes?.animaciones !== false,
+    modo: normalizarModo(modo),
+    horario: normalizarHorario(ajustes?.horario),
+    forzado: normalizarForzado(ajustes?.forzado),
+  };
+}
+
+/** En modo SALES la app no suena ni escribe letra a letra, sin perder tus ajustes. */
+export const sonidoActivo = (ajustes, modo) => ajustes.sonido && modo !== 'sales';
+export const textoAnimado = (ajustes, modo) => ajustes.animaciones && modo !== 'sales';

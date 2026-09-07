@@ -3,6 +3,8 @@
    castigo: aceptarla primero, cumplirla después.
    ========================================================================== */
 
+import { t } from '../modo/vista.js';
+
 import { MOTIVOS } from './catalogo.js';
 import { castigoCumplido } from './reglas.js';
 
@@ -34,8 +36,8 @@ export function renderCastigo(castigo) {
   }
 
   elCastigo.bandaTexto.textContent = castigo.aceptado
-    ? 'Cumple la misión de castigo. Hasta entonces ganas la mitad de experiencia y no empieza una semana nueva.'
-    : 'Acepta el castigo para poder cumplirlo. Hasta entonces la semana no vuelve a empezar.';
+    ? `Cumple ${t('castigo').toLowerCase()}. Hasta entonces ganas la mitad de experiencia y no empieza una semana nueva.`
+    : 'Acéptalo para poder cumplirlo. Hasta entonces la semana no vuelve a empezar.';
 
   const mision = castigo.mision;
   const unidad = mision.unidad ? ` ${escapar(mision.unidad)}` : '';
@@ -43,10 +45,10 @@ export function renderCastigo(castigo) {
 
   const controles = !castigo.aceptado
     ? `<button class="boton boton--peligro" data-accion="aceptar-castigo" type="button"
-               style="width:100%">ACEPTO EL CASTIGO</button>`
+               style="width:100%">${t('castigoAceptar')}</button>`
     : listo
       ? `<button class="boton boton--primario" data-accion="cumplir-castigo" type="button"
-                 style="width:100%">SALDAR LA DEUDA</button>`
+                 style="width:100%">${t('castigoSaldar')}</button>`
       : `<button class="boton" data-accion="castigo-menos" type="button" aria-label="Restar">−</button>
          <input class="paso" data-accion="castigo-fijar" type="number" inputmode="decimal" min="0"
                 max="${mision.objetivo}" step="${mision.paso}" value="${numero(mision.progreso)}"
@@ -59,7 +61,7 @@ export function renderCastigo(castigo) {
         <h3>${escapar(mision.nombre)}</h3>
         <span class="puerta__sello puerta__sello--castigo">!</span>
       </div>
-      <p class="tenue">${escapar(MOTIVOS[castigo.origen] ?? MOTIVOS.dia)}
+      <p class="tenue">${escapar(castigo.origen === 'jefe' ? t('castigoPorJefe') : t('castigoPorDia'))}
         ${castigo.aceptado ? '' : ' El Sistema espera tu respuesta.'}</p>
       ${castigo.aceptado ? `
       <div class="barra barra--castigo" style="margin:8px 0">

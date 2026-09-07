@@ -31,25 +31,28 @@
     <div class="cabecera__marca">
       <span class="cabecera__glifo" aria-hidden="true">&#10023;</span>
       <div>
-        <h1 id="titulo-app">EL SISTEMA</h1>
-        <p class="tenue" id="lema-app">Solo el que cumple, asciende.</p>
+        <h1 id="titulo-app" data-t="app">EL SISTEMA</h1>
+        <p class="tenue" id="lema-app" data-t="lema">Solo el que cumple, asciende.</p>
       </div>
     </div>
-    <div class="cabecera__reloj">
-      <strong id="reloj">--:--</strong>
-      <small>para medianoche</small>
+    <div class="cabecera__lado">
+      <button class="boton boton--modo" id="btn-modo" type="button">MODO SALES</button>
+      <div class="cabecera__reloj">
+        <strong id="reloj">--:--</strong>
+        <small>para medianoche</small>
+      </div>
     </div>
   </header>
 
   <!-- Aviso permanente mientras dura la penalización -->
   <div class="castigo" id="banda-castigo" hidden>
-    <strong>⚠ ZONA DE PENALIZACIÓN</strong>
+    <strong data-t="castigoBanda">⚠ ZONA DE PENALIZACIÓN</strong>
     <span id="castigo-texto">Fallaste la misión diaria. Ganas la mitad de experiencia hasta que cumplas un día completo.</span>
   </div>
 
   <!-- Ventana de estado: la ficha del jugador, como la del Sistema -->
   <section class="ventana" aria-label="Ventana de estado">
-    <p class="ventana__titulo">ESTADO</p>
+    <p class="ventana__titulo" data-t="estado">ESTADO</p>
 
     <div class="ficha">
       <p class="ficha__dato">
@@ -57,9 +60,9 @@
         <button id="btn-nombre" class="icono" type="button" title="Cambiar nombre" aria-label="Cambiar nombre">&#9998;</button>
       </p>
       <p class="ficha__dato"><span>NIVEL:</span><strong id="nivel">1</strong></p>
-      <p class="ficha__dato"><span>CLASE:</span><strong id="clase">Sin clase</strong></p>
-      <p class="ficha__dato"><span>FATIGA:</span><strong id="fatiga-texto">0</strong></p>
-      <p class="ficha__dato ficha__dato--ancho"><span>TÍTULO:</span><strong id="titulo-equipado">Sin título</strong></p>
+      <p class="ficha__dato"><span data-t="fichaClase">CLASE:</span><strong id="clase">Sin clase</strong></p>
+      <p class="ficha__dato"><span data-t="fichaFatiga">FATIGA:</span><strong id="fatiga-texto">0</strong></p>
+      <p class="ficha__dato ficha__dato--ancho"><span data-t="fichaTitulo">TÍTULO:</span><strong id="titulo-equipado">Sin título</strong></p>
       <p class="ficha__dato ficha__dato--ancho"><span>HP:</span><strong id="hp-texto">0/0</strong></p>
     </div>
 
@@ -82,21 +85,21 @@
     <div class="regla"></div>
 
     <div class="ficha">
-      <p class="ficha__dato"><span>PODER:</span><strong id="poder">0</strong></p>
+      <p class="ficha__dato"><span data-t="fichaPoder">PODER:</span><strong id="poder">0</strong></p>
       <p class="ficha__dato"><span>RANGO:</span><strong id="rango">E</strong></p>
       <p class="ficha__dato"><span>RACHA:</span><strong id="racha">0</strong></p>
       <p class="ficha__dato"><span>DÍAS:</span><strong id="dias">0</strong></p>
-      <p class="ficha__dato"><span>ORO:</span><strong id="oro">0</strong></p>
+      <p class="ficha__dato"><span data-t="fichaOro">ORO:</span><strong id="oro">0</strong></p>
       <p class="ficha__dato"><span>PUNTOS:</span><strong id="puntos-ficha">0</strong></p>
     </div>
   </section>
 
   <nav class="pestanas" role="tablist" aria-label="Secciones">
-    <button class="pestana" role="tab" data-tab="mision" aria-selected="true" aria-controls="tab-mision">MISIÓN</button>
-    <button class="pestana" role="tab" data-tab="estado" aria-selected="false" aria-controls="tab-estado">ESTADO</button>
-    <button class="pestana" role="tab" data-tab="cuadro" aria-selected="false" aria-controls="tab-cuadro">CUADRO</button>
-    <button class="pestana" role="tab" data-tab="tienda" aria-selected="false" aria-controls="tab-tienda">TIENDA</button>
-    <button class="pestana" role="tab" data-tab="ajustes" aria-selected="false" aria-controls="tab-ajustes">AJUSTES</button>
+    <button class="pestana" role="tab" data-tab="mision" aria-selected="true" aria-controls="tab-mision" data-t="tabMision">MISIÓN</button>
+    <button class="pestana" role="tab" data-tab="estado" aria-selected="false" aria-controls="tab-estado" data-t="tabEstado">ESTADO</button>
+    <button class="pestana" role="tab" data-tab="cuadro" aria-selected="false" aria-controls="tab-cuadro" data-t="tabCuadro">CUADRO</button>
+    <button class="pestana" role="tab" data-tab="tienda" aria-selected="false" aria-controls="tab-tienda" data-t="tabTienda">TIENDA</button>
+    <button class="pestana" role="tab" data-tab="ajustes" aria-selected="false" aria-controls="tab-ajustes" data-t="tabAjustes">AJUSTES</button>
   </nav>
 
   <main>
@@ -105,37 +108,37 @@
       <!-- Deuda pendiente: aparece por encima de todo lo demás -->
       <div id="seccion-castigo" hidden>
         <div class="panel__cabecera">
-          <h2>MISIÓN DE CASTIGO</h2>
-          <span class="insignia insignia--peligro">DEUDA</span>
+          <h2 data-t="castigo">MISIÓN DE CASTIGO</h2>
+          <span class="insignia insignia--peligro" data-t="castigoInsignia">DEUDA</span>
         </div>
         <div id="castigo"></div>
         <div class="separador"></div>
       </div>
 
       <div class="panel__cabecera">
-        <h2>MISIÓN DIARIA</h2>
+        <h2 data-t="misionDiaria">MISIÓN DIARIA</h2>
         <span class="insignia" id="dia-porcentaje">0%</span>
       </div>
-      <p class="subtitulo" id="subtitulo-mision">Preparación para convertirse en un guerrero</p>
+      <p class="subtitulo" id="subtitulo-mision" data-t="subtitulo">Preparación para convertirse en un guerrero</p>
       <p class="alerta" id="aviso-diaria">Completa todas las misiones antes de medianoche o serás penalizado.</p>
 
       <div class="misiones" id="lista-misiones"></div>
 
       <div class="acciones">
         <button class="boton boton--primario" id="btn-completar" type="button" disabled>RECLAMAR RECOMPENSA</button>
-        <button class="boton" id="btn-nueva" type="button">＋ NUEVA MISIÓN</button>
+        <button class="boton" id="btn-nueva" type="button" data-t="nuevaMision">＋ NUEVA MISIÓN</button>
       </div>
 
       <!-- Jefe de la semana -->
       <div class="panel__cabecera panel__cabecera--separada">
-        <h2>JEFE DE LA SEMANA</h2>
+        <h2 data-t="jefe">JEFE DE LA SEMANA</h2>
         <span class="insignia" id="jefe-rango" hidden>RANGO E</span>
       </div>
       <div id="jefe"></div>
 
       <!-- Puerta del día -->
       <div class="panel__cabecera panel__cabecera--separada">
-        <h2>PUERTA</h2>
+        <h2 data-t="puerta">PUERTA</h2>
         <span class="insignia" id="puerta-rango" hidden>RANGO E</span>
       </div>
       <div id="puerta"></div>
@@ -144,24 +147,24 @@
     <!-- ------------------------------ ESTADO ------------------------------ -->
     <section class="panel" id="tab-estado" role="tabpanel" aria-label="Estado y estadísticas" hidden>
       <div class="panel__cabecera">
-        <h2>ESTADÍSTICAS</h2>
+        <h2 data-t="estadisticas">ESTADÍSTICAS</h2>
         <span class="insignia" id="insignia-puntos">0 puntos</span>
       </div>
       <p class="tenue" id="aviso-puntos">Sube de nivel para conseguir puntos que repartir.</p>
       <div class="stats" id="lista-stats"></div>
 
       <div class="panel__cabecera panel__cabecera--separada">
-        <h2>CLASE</h2>
+        <h2 data-t="clase">CLASE</h2>
       </div>
       <div id="bloque-clase"></div>
 
       <div class="panel__cabecera panel__cabecera--separada">
-        <h2>TÍTULOS</h2>
+        <h2 data-t="titulos">TÍTULOS</h2>
       </div>
       <div class="titulos" id="lista-titulos"></div>
 
       <div class="panel__cabecera panel__cabecera--separada">
-        <h2>HISTORIAL</h2>
+        <h2 data-t="historial">HISTORIAL</h2>
       </div>
       <div class="historial" id="historial"></div>
       <p class="tenue leyenda">
@@ -193,34 +196,46 @@
     <!-- ------------------------------ TIENDA ------------------------------ -->
     <section class="panel" id="tab-tienda" role="tabpanel" aria-label="Tienda" hidden>
       <div class="panel__cabecera">
-        <h2>TIENDA DEL SISTEMA</h2>
+        <h2 data-t="tienda">TIENDA DEL SISTEMA</h2>
         <span class="insignia" id="oro-tienda">0 oro</span>
       </div>
-      <p class="tenue">El oro se gana completando misiones diarias y cerrando puertas.</p>
+      <p class="tenue" data-t="tiendaAyuda">El oro se gana completando misiones diarias y cerrando puertas.</p>
       <div class="objetos" id="lista-tienda"></div>
 
       <div class="panel__cabecera panel__cabecera--separada">
-        <h2>INVENTARIO</h2>
+        <h2 data-t="inventario">INVENTARIO</h2>
       </div>
       <div class="objetos" id="lista-inventario"></div>
     </section>
 
     <!-- ------------------------------ AJUSTES ------------------------------ -->
     <section class="panel" id="tab-ajustes" role="tabpanel" aria-label="Ajustes" hidden>
-      <h2>AJUSTES</h2>
+      <h2 data-t="ajustes">AJUSTES</h2>
 
       <label class="opcion">
         <input type="checkbox" id="ajuste-sonido">
-        <span>Sonido del Sistema</span>
+        <span data-t="ajusteSonido">Sonido del Sistema</span>
       </label>
       <label class="opcion">
         <input type="checkbox" id="ajuste-animaciones">
         <span>Texto con efecto de escritura</span>
       </label>
+      <div class="panel__cabecera panel__cabecera--separada"><h2>MODO AUTOMÁTICO</h2></div>
+      <p class="tenue">En tu horario laboral la app se pone en modo SALES sola. El botón de la
+        cabecera manda hasta el siguiente tramo.</p>
       <label class="opcion">
-        <input type="checkbox" id="ajuste-sobrio">
-        <span>Modo sobrio (aspecto de oficina, sin sonido)</span>
+        <input type="checkbox" id="ajuste-horario">
+        <span>Cambiar de modo según mi horario</span>
       </label>
+      <div class="fila-campos">
+        <label>Desde
+          <input type="time" id="ajuste-desde" value="09:00">
+        </label>
+        <label>Hasta
+          <input type="time" id="ajuste-hasta" value="18:00">
+        </label>
+      </div>
+      <div class="dias" id="ajuste-dias"></div>
 
       <div class="panel__cabecera panel__cabecera--separada"><h2>CUOTA DEL MES</h2></div>
       <p class="tenue">Tu objetivo de facturación mensual. El cuadro de mando calcula lo que
@@ -234,7 +249,7 @@
         </label>
       </div>
 
-      <div class="panel__cabecera panel__cabecera--separada"><h2>MISIONES DIARIAS</h2></div>
+      <div class="panel__cabecera panel__cabecera--separada"><h2 data-t="misionesAjustes">MISIONES DIARIAS</h2></div>
       <p class="tenue">Elige el set que se ajuste a tu vida. Sustituye las misiones actuales,
         incluidas las que hayas creado tú.</p>
       <div class="titulos" id="lista-plantillas"></div>
@@ -309,7 +324,7 @@
 
 <!-- Elección de clase -->
 <dialog id="dlg-clase" class="dialogo">
-  <h2>CAMBIO DE CLASE</h2>
+  <h2 data-t="dlgClase">CAMBIO DE CLASE</h2>
   <p class="tenue">Solo se elige una vez. Tu clase da un 15 % extra de experiencia en las misiones de su especialidad.</p>
   <div class="clases" id="lista-clases"></div>
   <div class="acciones">
@@ -317,13 +332,17 @@
   </div>
 </dialog>
 
+<!-- Avisos discretos del modo SALES -->
+<div class="avisos" id="avisos" aria-live="polite"></div>
+
 <!-- Ventana de notificación del Sistema -->
 <div class="notificacion" id="notificacion" role="alertdialog" aria-modal="true" aria-labelledby="noti-titulo" hidden>
   <div class="notificacion__ventana" id="noti-ventana">
     <span class="notificacion__barra notificacion__barra--arriba" aria-hidden="true"></span>
     <div class="notificacion__panel">
       <p class="notificacion__cabecera">
-        <span class="notificacion__icono" aria-hidden="true">!</span> NOTIFICACIÓN
+        <span class="notificacion__icono" aria-hidden="true">!</span>
+        <span data-t="notiCabecera">NOTIFICACIÓN</span>
       </p>
       <h2 id="noti-titulo">TÍTULO</h2>
       <div id="noti-cuerpo"></div>

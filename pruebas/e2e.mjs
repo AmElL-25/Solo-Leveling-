@@ -3,7 +3,8 @@
      npm install playwright && node pruebas/e2e.mjs
    Recorre el ciclo completo: misión diaria, fatiga, jefe semanal, recompensa,
    títulos, puertas, tienda, clase, castigo con bloqueo de la semana,
-   plantillas, indicadores de negocio, cuadro de mando, cuota y modo sobrio. */
+   plantillas, indicadores de negocio, cuadro de mando, cuota y los dos modos
+   (SISTEMA y SALES) con su horario automático. */
 
 import { chromium } from 'playwright';
 
@@ -347,20 +348,87 @@ const archivado = (await leerEstado()).historial[0];
 comprobar('el día archivado guarda los contactos', archivado.indicadores.contactos === 20);
 comprobar('el día archivado guarda la facturación', archivado.indicadores.ingresos === 4500);
 
-/* ---------------------------- 16. modo sobrio ---------------------------- */
+/* ------------------------- 16. los dos modos ------------------------- */
 
-await page.click('.pestana[data-tab="ajustes"]');
-await page.check('#ajuste-sobrio');
-await aceptar();
-comprobar('el modo sobrio cambia el tema',
-  await page.locator('body').getAttribute('data-tema') === 'sobrio');
-comprobar('el modo sobrio cambia el nombre de la cabecera',
-  await page.locator('#titulo-app').textContent() === 'PANEL');
-comprobar('el modo sobrio se guarda', (await leerEstado()).ajustes.tema === 'sobrio');
-await page.uncheck('#ajuste-sobrio');
-await aceptar();
-comprobar('se puede volver al Sistema',
+comprobar('arranca en modo Sistema',
+  await page.locator('body').getAttribute('data-modo') === 'sistema');
+comprobar('el interruptor ofrece el otro modo',
+  await page.locator('#btn-modo').textContent() === 'MODO SALES');
+
+await page.click('#btn-modo');
+comprobar('el interruptor cambia a SALES',
+  await page.locator('body').getAttribute('data-modo') === 'sales');
+comprobar('la cabecera cambia de nombre',
+  await page.locator('#titulo-app').textContent() === 'SALES');
+comprobar('el vocabulario cambia: el jefe es el objetivo de la semana',
+  (await page.locator('#tab-mision').textContent()).includes('OBJETIVO DE LA SEMANA'));
+comprobar('el texto del aviso diario se traduce',
+  (await page.locator('#aviso-diaria').textContent()).includes('plan de recuperación'));
+comprobar('las pestañas se traducen',
+  (await page.locator('.pestana[data-tab="mision"]').textContent()).trim() === 'OBJETIVOS');
+comprobar('el modo se guarda', (await leerEstado()).ajustes.modo === 'sales');
+
+// Nada desaparece: siguen todas las secciones
+comprobar('en SALES sigue estando la tienda', await page.locator('#tab-tienda').count() === 1);
+comprobar('en SALES siguen estando los títulos', await page.locator('#lista-titulos .titulo-item').count() > 0);
+comprobar('en SALES sigue estando la puerta', await page.locator('#puerta').count() === 1);
+comprobar('en SALES sigue estando el cuadro de mando', await page.locator('#tab-cuadro').count() === 1);
+
+// Los avisos no bloquean: salen arriba y se van solos
+await page.click('.pestana[data-tab="mision"]');
+await page.locator('.mision', { hasText: 'Cardio' }).locator('[data-accion="mas"]').click();
+await page.evaluate(async () => {
+  const { notificar } = await import('/js/notificaciones/notificaciones.js');
+  notificar({ titulo: 'PRUEBA', lineas: [{ texto: 'aviso discreto' }] });
+});
+await page.waitForTimeout(150);
+comprobar('en SALES el aviso es una barra flotante', await page.locator('.aviso').count() === 1);
+comprobar('el aviso no bloquea la pantalla', await page.locator('#notificacion').isHidden());
+await page.click('.aviso');
+await page.waitForTimeout(350);
+comprobar('el aviso se puede cerrar de un toque', await page.locator('.aviso').count() === 0);
+
+await page.click('#btn-modo');
+comprobar('se vuelve al Sistema de un toque',
   await page.locator('#titulo-app').textContent() === 'EL SISTEMA');
+comprobar('el vocabulario vuelve',
+  (await page.locator('#tab-mision').textContent()).includes('JEFE DE LA SEMANA'));
+
+/* --------------------- 17. horario automático y migración --------------------- */
+
+const horario = await page.evaluate(async () => {
+  const { modoEfectivo, forzar, estadoInicialHorario } = await import('/js/modo/reglas.js');
+  const ajustes = {
+    modo: 'sistema',
+    horario: { ...estadoInicialHorario(), activo: true, dias: [1, 2, 3, 4, 5], desde: '09:00', hasta: '18:00' },
+    forzado: null,
+  };
+  const lunes = (hora) => new Date(2026, 8, 7, hora, 0);   // 7 de septiembre de 2026, lunes
+  const domingo = (hora) => new Date(2026, 8, 6, hora, 0);
+  const dentro = modoEfectivo(ajustes, lunes(11));
+  const fuera = modoEfectivo(ajustes, lunes(21));
+  const finde = modoEfectivo(ajustes, domingo(11));
+  // Forzar SISTEMA en horario de oficina manda hasta que acabe el tramo
+  const forzados = { ...ajustes, forzado: forzar(ajustes, 'sistema', lunes(11)) };
+  return {
+    dentro,
+    fuera,
+    finde,
+    forzadoDentro: modoEfectivo(forzados, lunes(12)),
+    forzadoFuera: modoEfectivo(forzados, lunes(21)),
+  };
+});
+comprobar('en horario laboral se pone en SALES', horario.dentro === 'sales');
+comprobar('fuera de horario vuelve al Sistema', horario.fuera === 'sistema');
+comprobar('el fin de semana es del Sistema', horario.finde === 'sistema');
+comprobar('el interruptor manda dentro del tramo', horario.forzadoDentro === 'sistema');
+comprobar('al cambiar el tramo vuelve a mandar el horario', horario.forzadoFuera === 'sistema');
+
+const migrado = await page.evaluate(async () => {
+  const { normalizarAjustes } = await import('/js/ajustes/reglas.js');
+  return normalizarAjustes({ sonido: true, animaciones: true, tema: 'sobrio' });
+});
+comprobar('el ajuste antiguo "sobrio" se migra a modo SALES', migrado.modo === 'sales');
 
 
 console.log(ok.join('\n'));

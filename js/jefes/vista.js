@@ -3,6 +3,8 @@
    barra de vida y días que quedan de semana.
    ========================================================================== */
 
+import { t } from '../modo/vista.js';
+
 import { fechaHoy, lunesDeLaSemana } from '../nucleo/fecha.js';
 import { jefeVivo } from './reglas.js';
 
@@ -30,9 +32,8 @@ export function renderJefe(jefe, semanaBloqueada = false) {
 
   if (!jefe) {
     elJefes.contenedor.innerHTML = semanaBloqueada
-      ? `<p class="vacio vacio--peligro">El Sistema no abrirá la semana hasta que saldes tu deuda.
-         Cumple la misión de castigo y aparecerá un jefe.</p>`
-      : '<p class="vacio">Ningún jefe a la vista. El próximo lunes aparecerá uno.</p>';
+      ? `<p class="vacio vacio--peligro">${t('jefeBloqueado')}</p>`
+      : `<p class="vacio">${t('jefeSinJefe')}</p>`;
     return;
   }
 
@@ -47,9 +48,7 @@ export function renderJefe(jefe, semanaBloqueada = false) {
         <h3>${escapar(jefe.nombre)}</h3>
         <span class="puerta__sello puerta__sello--jefe">${escapar(jefe.rango)}</span>
       </div>
-      <p class="tenue">${vivo
-        ? 'Cada objetivo que completas le hace daño. Cierra puertas para pegar más fuerte.'
-        : 'Derrotado. El lunes aparecerá otro.'}</p>
+      <p class="tenue">${vivo ? t('jefeVivo') : t('jefeCaido')}</p>
       <div class="barra barra--jefe" style="margin:8px 0">
         <div class="barra__relleno" style="width:${porcentaje}%"></div>
         <span class="barra__texto">${jefe.vida} / ${jefe.vidaMaxima} HP</span>
@@ -58,7 +57,7 @@ export function renderJefe(jefe, semanaBloqueada = false) {
         <span class="xp">Recompensa: ${Math.round(jefe.vidaMaxima * 0.25)} XP</span>
         <span class="oro">${Math.round(jefe.vidaMaxima * 0.125)} oro</span>
         <span>${vivo
-          ? `${restantes} ${restantes === 1 ? 'día' : 'días'} de plazo`
+          ? `${restantes} ${restantes === 1 ? 'día' : 'días'} ${t('jefePlazo')}`
           : 'semana superada'}</span>
       </div>
     </div>`;

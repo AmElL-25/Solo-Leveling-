@@ -777,10 +777,11 @@ body.en-castigo .rejilla {
 .mision--opcional { border-style: dashed; }
 .opcion--dialogo { font-size: 0.7rem; color: var(--tenue); margin-bottom: 12px; }
 
-/* ================================ modo sobrio ================================ */
-/* Misma estructura, otra ropa: paleta apagada, sin resplandores ni adornos. */
+/* ================================= modo SALES =================================
+   Misma estructura y las mismas secciones: solo cambia la ropa. Paleta de
+   oficina, sin resplandores ni adornos, tipografía del sistema.            */
 
-body[data-tema="sobrio"] {
+body[data-modo="sales"] {
   --fondo: #10151b;
   --panel: rgba(30, 38, 48, 0.92);
   --panel-solido: #1b232d;
@@ -798,29 +799,91 @@ body[data-tema="sobrio"] {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   letter-spacing: 0;
 }
-body[data-tema="sobrio"] .rejilla,
-body[data-tema="sobrio"] .cabecera__glifo { display: none; }
-body[data-tema="sobrio"] .ventana,
-body[data-tema="sobrio"] .panel,
-body[data-tema="sobrio"] .notificacion__panel {
+body[data-modo="sales"] .rejilla,
+body[data-modo="sales"] .cabecera__glifo { display: none; }
+body[data-modo="sales"] .ventana,
+body[data-modo="sales"] .panel,
+body[data-modo="sales"] .notificacion__panel {
   clip-path: none;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
   backdrop-filter: none;
 }
-body[data-tema="sobrio"] h1,
-body[data-tema="sobrio"] .ventana__titulo,
-body[data-tema="sobrio"] .nivel,
-body[data-tema="sobrio"] .notificacion__ventana h2 { text-shadow: none; }
-body[data-tema="sobrio"] .ventana__titulo { font-size: 1rem; letter-spacing: 0.12em; }
-body[data-tema="sobrio"] .ventana__titulo::before,
-body[data-tema="sobrio"] .regla::after { display: none; }
-body[data-tema="sobrio"] .barra__relleno,
-body[data-tema="sobrio"] .notificacion__barra,
-body[data-tema="sobrio"] .notificacion__icono { box-shadow: none; }
-body[data-tema="sobrio"] .notificacion__barra { height: 2px; background: var(--borde-fuerte); }
-body[data-tema="sobrio"] .notificacion__barra::before,
-body[data-tema="sobrio"] .notificacion__barra::after { display: none; }
-body[data-tema="sobrio"] .notificacion__panel { background: var(--panel-solido); }
-body[data-tema="sobrio"] .castigo { animation: none; box-shadow: none; }
-body[data-tema="sobrio"] .pestana[aria-selected="true"] { box-shadow: none; background: rgba(160, 180, 200, 0.14); }
-body[data-tema="sobrio"] .escribiendo::after { display: none; }
+body[data-modo="sales"] h1,
+body[data-modo="sales"] .ventana__titulo,
+body[data-modo="sales"] .nivel,
+body[data-modo="sales"] .notificacion__ventana h2 { text-shadow: none; }
+body[data-modo="sales"] .ventana__titulo { font-size: 1rem; letter-spacing: 0.12em; }
+body[data-modo="sales"] .ventana__titulo::before,
+body[data-modo="sales"] .regla::after { display: none; }
+body[data-modo="sales"] .barra__relleno,
+body[data-modo="sales"] .notificacion__barra,
+body[data-modo="sales"] .notificacion__icono { box-shadow: none; }
+body[data-modo="sales"] .notificacion__barra { height: 2px; background: var(--borde-fuerte); }
+body[data-modo="sales"] .notificacion__barra::before,
+body[data-modo="sales"] .notificacion__barra::after { display: none; }
+body[data-modo="sales"] .notificacion__panel { background: var(--panel-solido); }
+body[data-modo="sales"] .castigo { animation: none; box-shadow: none; }
+body[data-modo="sales"] .pestana[aria-selected="true"] { box-shadow: none; background: rgba(160, 180, 200, 0.14); }
+body[data-modo="sales"] .escribiendo::after { display: none; }
+
+
+/* --------------------------- interruptor de modo --------------------------- */
+
+.cabecera__lado { display: flex; align-items: center; gap: 10px; }
+.boton--modo {
+  padding: 7px 10px;
+  font-size: 0.56rem;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+
+.dias { display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
+.dia-semana {
+  width: 34px;
+  height: 34px;
+  font: inherit;
+  font-size: 0.7rem;
+  color: var(--tenue);
+  background: rgba(4, 12, 24, 0.4);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  cursor: pointer;
+}
+.dia-semana--activo { color: var(--cian-claro); border-color: var(--borde-fuerte); background: rgba(31, 111, 168, 0.22); }
+
+/* ----------------------- avisos discretos (modo SALES) ----------------------- */
+
+.avisos {
+  position: fixed;
+  top: calc(10px + env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: grid;
+  gap: 8px;
+  width: min(420px, calc(100vw - 24px));
+  pointer-events: none;
+}
+.aviso {
+  pointer-events: auto;
+  padding: 10px 14px;
+  background: var(--panel-solido);
+  border: 1px solid var(--borde-fuerte);
+  border-left: 3px solid var(--cian);
+  border-radius: var(--radio);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+  animation: entrar-aviso 0.22s ease-out;
+}
+.aviso--peligro { border-left-color: var(--rojo); }
+.aviso--saliendo { animation: salir-aviso 0.24s ease-in forwards; }
+.aviso__titulo { font-size: 0.74rem; font-weight: 600; letter-spacing: 0.06em; color: var(--texto); }
+.aviso__linea { font-size: 0.7rem; color: var(--tenue); margin-top: 2px; }
+
+@keyframes entrar-aviso {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes salir-aviso {
+  to { opacity: 0; transform: translateY(-8px); }
+}

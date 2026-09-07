@@ -6,7 +6,7 @@
 
 import { cargar, guardar, borrar, estadoInicial, exportar, importar } from './progreso.js';
 import { fechaHoy } from './nucleo/fecha.js';
-import { notificar, sonar, configurarAnimaciones } from './notificaciones/notificaciones.js';
+import { notificar, sonar, configurarAnimaciones, configurarAvisos } from './notificaciones/notificaciones.js';
 import { despertarSonido } from './sonido/sintetizador.js';
 
 import {
@@ -56,11 +56,24 @@ import { normalizarCuota } from './negocio/reglas.js';
 import { renderHistorial } from './historial/vista.js';
 import { elAjustes, renderAjustes } from './ajustes/vista.js';
 import { sonidoActivo, textoAnimado } from './ajustes/reglas.js';
-import { aplicarTema } from './ajustes/tema.js';
+
+import { modoEfectivo, forzar, normalizarHorario } from './modo/reglas.js';
+import { aplicarModo, elModo, t } from './modo/vista.js';
 
 let estado = cargar();
+let modo = modoEfectivo(estado.ajustes);
+
+/** Deja el modo, el sonido y el tipo de aviso en su sitio. */
+function sincronizarModo() {
+  modo = modoEfectivo(estado.ajustes);
+  aplicarModo(modo);
+  configurarAnimaciones(textoAnimado(estado.ajustes, modo));
+  configurarAvisos({ discreto: modo === 'sales' });
+}
 
 function render() {
+  // El modo se fija antes de pintar: las vistas piden sus palabras al pintarse.
+  sincronizarModo();
   renderVentanaEstado(estado.jugador);
   renderStats(estado.jugador);
   renderMisiones(estado.misiones);
@@ -74,7 +87,6 @@ function render() {
   renderCuadro(estado);
   renderHistorial(estado);
   renderAjustes(estado);
-  aplicarTema(estado.ajustes);
 }
 
 function actualizar() {
@@ -83,7 +95,7 @@ function actualizar() {
 }
 
 function pitido(tipo) {
-  sonar(tipo, sonidoActivo(estado.ajustes));
+  sonar(tipo, sonidoActivo(estado.ajustes, modo));
 }
 
 /* ------------------------- avisos compartidos ------------------------- */
@@ -91,7 +103,7 @@ function pitido(tipo) {
 function avisarTitulos(titulos) {
   for (const titulo of titulos) {
     notificar({
-      titulo: 'TÍTULO DESBLOQUEADO',
+      titulo: t('notiTitulo'),
       lineas: [
         { texto: titulo.nombre, destacado: true },
         { texto: titulo.descripcion },
@@ -106,7 +118,7 @@ function avisarTitulos(titulos) {
 function avisarNivel(resultado) {
   if (resultado.niveles <= 0) return;
   notificar({
-    titulo: '¡HAS SUBIDO DE NIVEL!',
+    titulo: t('notiNivel'),
     lineas: [
       { texto: `Nivel ${resultado.nivelPrevio} → ${resultado.nivel}`, destacado: true },
       { texto: `+${resultado.niveles * 3} puntos de estadística disponibles.` },
@@ -118,7 +130,7 @@ function avisarNivel(resultado) {
 
   if (puedeCambiarClase(estado.jugador)) {
     notificar({
-      titulo: 'MISIÓN DE CAMBIO DE CLASE',
+      titulo: t('dlgClase'),
       lineas: [
         { texto: `Has alcanzado el nivel ${NIVEL_CAMBIO_CLASE}.` },
         { texto: 'El Sistema te ofrece especializarte.', destacado: true },
@@ -132,7 +144,7 @@ function avisarNivel(resultado) {
 function avisarJefeCaido(caido) {
   if (!caido) return;
   notificar({
-    titulo: 'JEFE DERROTADO',
+    titulo: t('notiJefeCaido'),
     lineas: [
       { texto: `${caido.nombre} (rango ${caido.rango}) ha caído.`, destacado: true },
       { texto: `+${caido.xp} XP · +${caido.oro} oro` },
@@ -148,7 +160,7 @@ function avisarJefeCaido(caido) {
 function avisarCastigo(castigo) {
   if (!castigo) return;
   notificar({
-    titulo: 'CASTIGO ASIGNADO',
+    titulo: t('notiCastigoNuevo'),
     lineas: [
       { texto: castigo.mision.nombre, destacado: true },
       { texto: `${castigo.mision.objetivo} ${castigo.mision.unidad} para saldar la deuda.` },
@@ -164,7 +176,7 @@ function avisarSemana(cambio) {
   if (!cambio) return;
   if (cambio.huido) {
     notificar({
-      titulo: 'EL JEFE HA ESCAPADO',
+      titulo: t('notiJefeHuido'),
       lineas: [
         { texto: `${cambio.huido.nombre} sobrevivió a la semana.` },
         { texto: 'Su recompensa se pierde. Nada más: el castigo ya lo llevan los días fallados.' },
@@ -176,7 +188,7 @@ function avisarSemana(cambio) {
   }
   if (cambio.bloqueado) {
     notificar({
-      titulo: 'SEMANA BLOQUEADA',
+      titulo: t('notiSemana'),
       lineas: [
         { texto: 'No habrá jefe hasta que saldes tu deuda.', destacado: true },
         { texto: 'Cumple la misión de castigo y el Sistema abrirá la semana.' },
@@ -189,7 +201,7 @@ function avisarSemana(cambio) {
   }
 
   notificar({
-    titulo: 'HA APARECIDO UN JEFE',
+    titulo: t('notiJefeNuevo'),
     lineas: [
       { texto: `${cambio.nuevo.nombre} — rango ${cambio.nuevo.rango}`, destacado: true },
       { texto: `${cambio.nuevo.vidaMaxima} puntos de vida. Tienes hasta el domingo.` },
@@ -202,7 +214,7 @@ function avisarSemana(cambio) {
 
 function avisarPuerta(puerta) {
   notificar({
-    titulo: 'SE HA ABIERTO UNA PUERTA',
+    titulo: t('notiPuerta'),
     lineas: [
       { texto: `Puerta de rango ${puerta.rango}`, destacado: true },
       { texto: `Desafío: ${puerta.nombre} — ${puerta.objetivo} ${puerta.unidad}.` },
@@ -219,7 +231,7 @@ function avisarMisionDiaria() {
   estado.dia.avisado = true;
   const { total, oro } = recompensaDia(estado);
   notificar({
-    titulo: 'HA LLEGADO LA MISIÓN DIARIA',
+    titulo: t('notiDiaria'),
     lineas: [
       { texto: 'Preparación para convertirse en un guerrero.' },
       { texto: `${estado.misiones.length} objetivos pendientes para hoy.` },
@@ -246,7 +258,7 @@ function comprobarDia() {
     if (resumen.rachaPerdida > 0) lineas.push({ texto: `Racha rota: ${resumen.rachaPerdida} días perdidos.` });
     lineas.push({ texto: 'Ganarás la mitad de experiencia hasta que completes un día entero.' });
 
-    notificar({ titulo: 'ZONA DE PENALIZACIÓN', lineas, tipo: 'peligro', boton: 'ACEPTO EL CASTIGO' });
+    notificar({ titulo: t('notiCastigo'), lineas, tipo: 'peligro', boton: 'ACEPTO EL CASTIGO' });
     pitido('error');
   }
 
@@ -365,7 +377,7 @@ elCicloDiario.btnCompletar.addEventListener('click', () => {
     lineas.push({ texto: 'Sigues en penalización: cumple el castigo para recuperar la experiencia entera.' });
   }
 
-  notificar({ titulo: 'MISIÓN DIARIA COMPLETADA', lineas, boton: 'RECIBIR' });
+  notificar({ titulo: t('reclamado'), lineas, boton: 'RECIBIR' });
   pitido('logro');
 
   avisarNivel(resultado);
@@ -383,7 +395,7 @@ elPuertas.contenedor.addEventListener('click', (evento) => {
     const resultado = cerrarPuerta(estado);
     if (!resultado) return;
     notificar({
-      titulo: 'PUERTA DESPEJADA',
+      titulo: t('notiPuertaHecha'),
       lineas: [
         { texto: `Puerta de rango ${resultado.rango} cerrada.` },
         { texto: `+${resultado.xp} XP · +${resultado.oro} oro`, destacado: true },
@@ -423,7 +435,7 @@ elCastigo.contenedor.addEventListener('click', (evento) => {
     case 'aceptar-castigo':
       if (!aceptarCastigo(estado)) return;
       notificar({
-        titulo: 'CASTIGO ACEPTADO',
+        titulo: t('notiCastigoOk'),
         lineas: [
           { texto: estado.castigo.mision.nombre, destacado: true },
           { texto: 'Cúmplelo y el Sistema volverá a abrir la semana.' },
@@ -445,7 +457,7 @@ elCastigo.contenedor.addEventListener('click', (evento) => {
       const saldado = cumplirCastigo(estado);
       if (!saldado) return;
       notificar({
-        titulo: 'DEUDA SALDADA',
+        titulo: t('notiDeuda'),
         lineas: [
           { texto: 'Has cumplido el castigo.', destacado: true },
           { texto: 'Vuelves a ganar toda la experiencia.' },
@@ -531,7 +543,7 @@ elClases.lista.addEventListener('click', (evento) => {
   if (!clase) return;
 
   notificar({
-    titulo: 'CLASE ADQUIRIDA',
+    titulo: t('notiClase'),
     lineas: [
       { texto: clase.nombre, destacado: true },
       { texto: clase.descripcion },
@@ -551,7 +563,7 @@ elTienda.catalogo.addEventListener('click', (evento) => {
   if (!objeto) return;
 
   notificar({
-    titulo: 'COMPRA REALIZADA',
+    titulo: t('notiCompra'),
     lineas: [
       { texto: `${objeto.icono} ${objeto.nombre}`, destacado: true },
       { texto: `−${objeto.precio} de oro. Está en tu inventario.` },
@@ -579,7 +591,7 @@ elTienda.inventario.addEventListener('click', (evento) => {
   }
 
   notificar({
-    titulo: 'OBJETO USADO',
+    titulo: t('notiObjeto'),
     lineas: [
       { texto: `${resultado.objeto.icono} ${resultado.objeto.nombre}`, destacado: true },
       { texto: resultado.mensaje },
@@ -608,15 +620,50 @@ elAjustes.sonido.addEventListener('change', () => {
 
 elAjustes.animaciones.addEventListener('change', () => {
   estado.ajustes.animaciones = elAjustes.animaciones.checked;
-  configurarAnimaciones(textoAnimado(estado.ajustes));
+  configurarAnimaciones(textoAnimado(estado.ajustes, modo));
   guardar(estado);
 });
 
-elAjustes.sobrio.addEventListener('change', () => {
-  estado.ajustes.tema = elAjustes.sobrio.checked ? 'sobrio' : 'sistema';
-  configurarAnimaciones(textoAnimado(estado.ajustes));
+elModo.boton.addEventListener('click', () => {
+  const otro = modo === 'sales' ? 'sistema' : 'sales';
+  estado.ajustes.modo = otro;
+  estado.ajustes.forzado = forzar(estado.ajustes, otro);
   actualizar();
   pitido('guardar');
+});
+
+elAjustes.horario.addEventListener('change', () => {
+  estado.ajustes.horario = normalizarHorario({
+    ...estado.ajustes.horario,
+    activo: elAjustes.horario.checked,
+  });
+  estado.ajustes.forzado = null; // al cambiar la regla, manda el horario
+  actualizar();
+  pitido('guardar');
+});
+
+for (const campo of [elAjustes.desde, elAjustes.hasta]) {
+  campo.addEventListener('change', () => {
+    estado.ajustes.horario = normalizarHorario({
+      ...estado.ajustes.horario,
+      desde: elAjustes.desde.value,
+      hasta: elAjustes.hasta.value,
+    });
+    estado.ajustes.forzado = null;
+    actualizar();
+  });
+}
+
+elAjustes.dias.addEventListener('click', (evento) => {
+  const boton = evento.target.closest('button[data-dia]');
+  if (!boton) return;
+  const dia = Number(boton.dataset.dia);
+  const dias = estado.ajustes.horario.dias.includes(dia)
+    ? estado.ajustes.horario.dias.filter((d) => d !== dia)
+    : [...estado.ajustes.horario.dias, dia];
+  estado.ajustes.horario = normalizarHorario({ ...estado.ajustes.horario, dias });
+  estado.ajustes.forzado = null;
+  actualizar();
 });
 
 /* La cuota se guarda mientras se escribe: no hay botón que se pueda olvidar. */
@@ -650,7 +697,6 @@ elAjustes.archivoImportar.addEventListener('change', async (evento) => {
     estado = importar(await archivo.text());
     comprobarDia();
     revisarSemana(estado);
-    configurarAnimaciones(textoAnimado(estado.ajustes));
     actualizar();
     notificar({ titulo: 'DATOS RESTAURADOS', lineas: [{ texto: 'Tu progreso ha vuelto al Sistema.' }] });
   } catch {
@@ -669,7 +715,7 @@ elAjustes.btnReiniciar.addEventListener('click', () => {
   estado = estadoInicial();
   actualizar();
   notificar({
-    titulo: 'SISTEMA REINICIADO',
+    titulo: t('notiReinicio'),
     lineas: [{ texto: 'Todo vuelve al nivel 1. Empieza de cero, jugador.' }],
   });
 });
@@ -679,6 +725,8 @@ elAjustes.btnReiniciar.addEventListener('click', () => {
 // El reloj también detecta el cambio de día si la app se queda abierta.
 setInterval(() => {
   renderReloj();
+  // El horario puede haber cambiado de tramo mientras la app estaba abierta.
+  if (modoEfectivo(estado.ajustes) !== modo) actualizar();
   if (estado.dia.fecha === fechaHoy()) return;
   const resumen = comprobarDia();
   if (!resumen) return;
@@ -705,7 +753,7 @@ document.addEventListener('visibilitychange', () => {
 document.addEventListener('pointerdown', despertarSonido, { once: true });
 document.addEventListener('keydown', despertarSonido, { once: true });
 
-configurarAnimaciones(textoAnimado(estado.ajustes));
+sincronizarModo();
 const resumenInicial = comprobarDia();
 avisarTitulos(revisarTitulos(estado));
 avisarMisionDiaria();

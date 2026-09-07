@@ -2,6 +2,8 @@
    Feature: tienda — pintado del catálogo y del inventario.
    ========================================================================== */
 
+import { t } from '../modo/vista.js';
+
 import { OBJETOS } from './catalogo.js';
 
 const $ = (selector) => document.querySelector(selector);
@@ -17,7 +19,7 @@ export const elTienda = {
 };
 
 export function renderTienda(estado) {
-  elTienda.oro.textContent = `${estado.jugador.oro} oro`;
+  elTienda.oro.textContent = `${estado.jugador.oro} ${t('oroMinuscula')}`;
 
   elTienda.catalogo.innerHTML = OBJETOS.map((objeto) => `
     <div class="objeto">

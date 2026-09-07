@@ -47,56 +47,48 @@
     <span id="castigo-texto">Fallaste la misión diaria. Ganas la mitad de experiencia hasta que cumplas un día completo.</span>
   </div>
 
-  <!-- Ventana de estado: siempre visible, sobre las pestañas -->
+  <!-- Ventana de estado: la ficha del jugador, como la del Sistema -->
   <section class="ventana" aria-label="Ventana de estado">
-    <p class="ventana__titulo">VENTANA DE ESTADO</p>
+    <p class="ventana__titulo">ESTADO</p>
 
-    <div class="ventana__fila">
-      <div>
-        <p class="ventana__nombre">
-          <span id="nombre-jugador">Jugador</span>
-          <button id="btn-nombre" class="icono" type="button" title="Cambiar nombre" aria-label="Cambiar nombre">&#9998;</button>
-        </p>
-        <p class="ventana__titulo-equipado" id="titulo-equipado">Sin título</p>
-      </div>
-      <p class="rango" id="rango" title="Rango"><small>RANGO</small>E</p>
+    <div class="ficha">
+      <p class="ficha__dato">
+        <span>NOMBRE:</span><strong id="nombre-jugador">Jugador</strong>
+        <button id="btn-nombre" class="icono" type="button" title="Cambiar nombre" aria-label="Cambiar nombre">&#9998;</button>
+      </p>
+      <p class="ficha__dato"><span>NIVEL:</span><strong id="nivel">1</strong></p>
+      <p class="ficha__dato"><span>CLASE:</span><strong id="clase">Sin clase</strong></p>
+      <p class="ficha__dato"><span>FATIGA:</span><strong id="fatiga-texto">0</strong></p>
+      <p class="ficha__dato ficha__dato--ancho"><span>TÍTULO:</span><strong id="titulo-equipado">Sin título</strong></p>
+      <p class="ficha__dato ficha__dato--ancho"><span>HP:</span><strong id="hp-texto">0/0</strong></p>
     </div>
 
-    <div class="ventana__nivel">
-      <span class="etiqueta">NIVEL</span>
-      <span class="nivel" id="nivel">1</span>
-      <span class="clase" id="clase">Sin clase</span>
+    <div class="regla"></div>
+
+    <div class="ficha">
+      <p class="ficha__dato ficha__dato--ancho"><span>MP:</span><strong id="mp-texto">0/0</strong></p>
     </div>
 
-    <div class="barra barra--xp">
-      <div class="barra__relleno" id="xp-barra"></div>
-      <span class="barra__texto" id="xp-texto">0 / 100 XP</span>
+    <div class="exp">
+      <span class="exp__etiqueta">EXP</span>
+      <div class="barra barra--xp"><div class="barra__relleno" id="xp-barra"></div></div>
+      <span class="exp__valor" id="xp-texto">0 / 100</span>
     </div>
 
-    <div class="vitales">
-      <div class="vital">
-        <span class="vital__etiqueta">HP</span>
-        <div class="barra barra--hp"><div class="barra__relleno" id="hp-barra"></div></div>
-        <span class="vital__valor" id="hp-texto">0/0</span>
-      </div>
-      <div class="vital">
-        <span class="vital__etiqueta">MP</span>
-        <div class="barra barra--mp"><div class="barra__relleno" id="mp-barra"></div></div>
-        <span class="vital__valor" id="mp-texto">0/0</span>
-      </div>
-      <div class="vital">
-        <span class="vital__etiqueta">FAT</span>
-        <div class="barra barra--fatiga"><div class="barra__relleno" id="fatiga-barra"></div></div>
-        <span class="vital__valor" id="fatiga-texto">0</span>
-      </div>
-    </div>
+    <div class="regla"></div>
 
-    <ul class="metricas">
-      <li><strong id="poder">0</strong><small>poder</small></li>
-      <li><strong id="racha">0</strong><small>racha</small></li>
-      <li><strong id="dias">0</strong><small>días</small></li>
-      <li><strong id="oro">0</strong><small>oro</small></li>
-    </ul>
+    <div class="ficha ficha--stats" id="ficha-stats"></div>
+
+    <div class="regla"></div>
+
+    <div class="ficha">
+      <p class="ficha__dato"><span>PODER:</span><strong id="poder">0</strong></p>
+      <p class="ficha__dato"><span>RANGO:</span><strong id="rango">E</strong></p>
+      <p class="ficha__dato"><span>RACHA:</span><strong id="racha">0</strong></p>
+      <p class="ficha__dato"><span>DÍAS:</span><strong id="dias">0</strong></p>
+      <p class="ficha__dato"><span>ORO:</span><strong id="oro">0</strong></p>
+      <p class="ficha__dato"><span>PUNTOS:</span><strong id="puntos-ficha">0</strong></p>
+    </div>
   </section>
 
   <nav class="pestanas" role="tablist" aria-label="Secciones">
@@ -283,10 +275,16 @@
 <!-- Ventana de notificación del Sistema -->
 <div class="notificacion" id="notificacion" role="alertdialog" aria-modal="true" aria-labelledby="noti-titulo" hidden>
   <div class="notificacion__ventana" id="noti-ventana">
-    <p class="notificacion__cabecera">&#9888; NOTIFICACIÓN</p>
-    <h2 id="noti-titulo">TÍTULO</h2>
-    <div id="noti-cuerpo"></div>
-    <button class="boton boton--primario" id="noti-aceptar" type="button">ACEPTAR</button>
+    <span class="notificacion__barra notificacion__barra--arriba" aria-hidden="true"></span>
+    <div class="notificacion__panel">
+      <p class="notificacion__cabecera">
+        <span class="notificacion__icono" aria-hidden="true">!</span> NOTIFICACIÓN
+      </p>
+      <h2 id="noti-titulo">TÍTULO</h2>
+      <div id="noti-cuerpo"></div>
+      <button class="boton boton--primario" id="noti-aceptar" type="button">ACEPTAR</button>
+    </div>
+    <span class="notificacion__barra notificacion__barra--abajo" aria-hidden="true"></span>
   </div>
 </div>
 

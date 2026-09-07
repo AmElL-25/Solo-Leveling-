@@ -112,41 +112,90 @@ p { margin: 0; }
   clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
 }
 
-.ventana { margin-bottom: 14px; }
-.ventana__fila { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
-.ventana__nombre { display: flex; align-items: center; gap: 6px; font-size: 0.95rem; color: var(--cian-claro); }
+.ventana { margin-bottom: 14px; padding: 20px 16px 18px; }
 
-.rango {
-  display: grid;
-  place-items: center;
-  min-width: 54px;
-  padding: 4px 10px;
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--dorado);
-  border: 1px solid rgba(255, 212, 121, 0.45);
-  border-radius: var(--radio);
-  text-shadow: 0 0 14px rgba(255, 212, 121, 0.5);
-  line-height: 1;
-}
-.rango small { display: block; font-size: 0.5rem; letter-spacing: 0.16em; color: var(--tenue); text-shadow: none; }
-
-.ventana__nivel { display: flex; align-items: baseline; gap: 10px; margin: 10px 0 8px; }
-.etiqueta { font-size: 0.66rem; letter-spacing: 0.24em; color: var(--tenue); }
-.nivel { font-size: 2.6rem; font-weight: 700; line-height: 1; color: #fff; text-shadow: var(--brillo); }
-
-.metricas {
-  list-style: none;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
-  margin: 14px 0 0;
-  padding: 0;
+/* Título centrado con el destello por encima, como en la ficha del anime. */
+.ventana__titulo {
+  position: relative;
   text-align: center;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  color: #fff;
+  text-shadow: 0 0 18px rgba(95, 211, 255, 0.55);
+  margin: 6px 0 18px;
+  padding-top: 12px;
 }
-.metricas li { border: 1px solid var(--borde); border-radius: var(--radio); padding: 6px 2px; background: rgba(4, 12, 24, 0.35); }
-.metricas strong { display: block; font-size: 1.05rem; color: var(--cian-claro); }
-.metricas small { font-size: 0.6rem; letter-spacing: 0.1em; color: var(--tenue); }
+.ventana__titulo::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(220px, 70%);
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--cian-claro), transparent);
+  box-shadow: 0 0 12px rgba(95, 211, 255, 0.7);
+}
+
+/* Ficha: pares ETIQUETA: valor en dos columnas. */
+.ficha {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px 14px;
+  margin: 0 2px;
+}
+.ficha--stats { gap: 8px 14px; }
+.ficha__dato {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  color: var(--tenue);
+  min-width: 0;
+}
+.ficha__dato--ancho { grid-column: 1 / -1; }
+.ficha__dato strong {
+  color: #eaf7ff;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ficha__dato .icono { padding: 0 4px; font-size: 0.75rem; }
+
+/* Línea divisoria con el rombo al final. */
+.regla {
+  position: relative;
+  height: 1px;
+  margin: 14px 4px;
+  background: linear-gradient(90deg, rgba(213, 234, 255, 0.75), rgba(213, 234, 255, 0.15));
+}
+.regla::after {
+  content: '';
+  position: absolute;
+  right: -3px;
+  top: -3px;
+  width: 7px;
+  height: 7px;
+  background: var(--cian-claro);
+  transform: rotate(45deg);
+  box-shadow: 0 0 8px rgba(95, 211, 255, 0.8);
+}
+
+/* Barra de experiencia: fina, con la etiqueta a la izquierda. */
+.exp {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 2px 0;
+}
+.exp__etiqueta { font-size: 0.62rem; letter-spacing: 0.16em; color: var(--tenue); }
+.exp__valor { font-size: 0.66rem; color: var(--cian-claro); }
+.exp .barra { height: 8px; border-color: rgba(95, 211, 255, 0.35); }
 
 /* ------------------------------ barras ------------------------------ */
 
@@ -176,6 +225,7 @@ p { margin: 0; }
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
 }
 .barra--mision { height: 18px; }
+.barra--xp .barra__texto { display: none; }
 .barra--mision .barra__relleno { background: linear-gradient(90deg, #17624f, var(--verde)); box-shadow: 0 0 14px rgba(69, 224, 160, 0.4); }
 
 /* ------------------------------ pestañas ------------------------------ */
@@ -386,24 +436,100 @@ p { margin: 0; }
   background: rgba(2, 6, 14, 0.78);
   backdrop-filter: blur(2px);
 }
+
 .notificacion__ventana {
-  width: min(420px, 100%);
-  padding: 22px 20px;
-  text-align: center;
-  background: linear-gradient(180deg, rgba(13, 30, 55, 0.96), rgba(6, 14, 28, 0.96));
-  border: 1px solid var(--borde-fuerte);
-  border-radius: var(--radio);
-  box-shadow: 0 0 60px rgba(95, 211, 255, 0.35), inset 0 0 40px rgba(31, 111, 168, 0.18);
-  clip-path: polygon(16px 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%, 0 16px);
+  width: min(430px, 100%);
   animation: aparecer 0.32s cubic-bezier(0.2, 1.3, 0.4, 1);
 }
-.notificacion__cabecera { font-size: 0.62rem; letter-spacing: 0.32em; color: var(--cian); margin-bottom: 10px; }
-.notificacion__ventana h2 { font-size: 1.05rem; color: #fff; text-shadow: var(--brillo); margin-bottom: 12px; }
-.notificacion__ventana p { font-size: 0.8rem; color: var(--texto); margin-bottom: 6px; }
-.notificacion__ventana .destacado { color: var(--dorado); font-size: 0.95rem; }
+
+/* Las dos barras del marco, más anchas que el panel y con muescas en las puntas. */
+.notificacion__barra {
+  position: relative;
+  display: block;
+  height: 5px;
+  margin: 0 -10px;
+  background: linear-gradient(90deg, rgba(95, 211, 255, 0.35), var(--cian-claro) 20%, var(--cian-claro) 80%, rgba(95, 211, 255, 0.35));
+  box-shadow: 0 0 18px rgba(95, 211, 255, 0.75);
+}
+.notificacion__barra::before,
+.notificacion__barra::after {
+  content: '';
+  position: absolute;
+  top: -3px;
+  width: 3px;
+  height: 11px;
+  background: var(--cian-claro);
+  box-shadow: 0 0 10px rgba(95, 211, 255, 0.9);
+}
+.notificacion__barra::before { left: 0; }
+.notificacion__barra::after { right: 0; }
+.notificacion__barra--arriba { margin-bottom: 7px; }
+.notificacion__barra--abajo { margin-top: 7px; }
+
+.notificacion__panel {
+  position: relative;
+  padding: 18px 18px 20px;
+  background:
+    repeating-linear-gradient(112deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 34px),
+    repeating-linear-gradient(-71deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 57px),
+    linear-gradient(160deg, rgba(19, 52, 92, 0.94), rgba(7, 20, 40, 0.96));
+  border: 1px solid rgba(95, 211, 255, 0.55);
+  box-shadow: 0 0 40px rgba(95, 211, 255, 0.35), inset 0 0 60px rgba(31, 111, 168, 0.25);
+}
+
+.notificacion__cabecera {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.72rem;
+  letter-spacing: 0.24em;
+  color: #fff;
+  padding-bottom: 10px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid rgba(95, 211, 255, 0.4);
+}
+.notificacion__icono {
+  display: grid;
+  place-items: center;
+  width: 17px;
+  height: 17px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  color: var(--cian-claro);
+  border: 1px solid var(--cian-claro);
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(95, 211, 255, 0.6);
+}
+
+.notificacion__ventana h2 {
+  font-size: 0.95rem;
+  color: #fff;
+  text-shadow: 0 0 14px rgba(95, 211, 255, 0.5);
+  margin-bottom: 10px;
+}
+.notificacion__ventana p {
+  font-size: 0.8rem;
+  line-height: 1.7;
+  color: var(--texto);
+  margin-bottom: 4px;
+}
+.notificacion__ventana .destacado { color: var(--dorado); font-size: 0.88rem; }
 .notificacion__ventana .boton { margin-top: 16px; width: 100%; }
-.notificacion--peligro .notificacion__ventana { border-color: rgba(255, 95, 109, 0.7); box-shadow: 0 0 60px rgba(255, 95, 109, 0.32); }
-.notificacion--peligro .notificacion__cabecera, .notificacion--peligro h2 { color: var(--rojo); text-shadow: 0 0 14px rgba(255, 95, 109, 0.5); }
+
+.notificacion--peligro .notificacion__barra {
+  background: linear-gradient(90deg, rgba(255, 95, 109, 0.35), #ff8f98 20%, #ff8f98 80%, rgba(255, 95, 109, 0.35));
+  box-shadow: 0 0 18px rgba(255, 95, 109, 0.7);
+}
+.notificacion--peligro .notificacion__barra::before,
+.notificacion--peligro .notificacion__barra::after { background: #ff8f98; box-shadow: 0 0 10px rgba(255, 95, 109, 0.9); }
+.notificacion--peligro .notificacion__panel {
+  border-color: rgba(255, 95, 109, 0.6);
+  box-shadow: 0 0 40px rgba(255, 95, 109, 0.32), inset 0 0 60px rgba(122, 31, 43, 0.3);
+}
+.notificacion--peligro .notificacion__cabecera { border-bottom-color: rgba(255, 95, 109, 0.45); }
+.notificacion--peligro .notificacion__icono { color: #ff8f98; border-color: #ff8f98; box-shadow: 0 0 8px rgba(255, 95, 109, 0.6); }
+.notificacion--peligro h2 { color: #ffb9be; text-shadow: 0 0 14px rgba(255, 95, 109, 0.5); }
 
 @keyframes aparecer {
   from { opacity: 0; transform: scale(0.9) translateY(10px); }
@@ -431,37 +557,6 @@ p { margin: 0; }
 /* ==========================================================================
    Ventana de estado ampliada, castigo, puertas, tienda y títulos
    ========================================================================== */
-
-.ventana__titulo {
-  font-size: 0.58rem;
-  letter-spacing: 0.32em;
-  color: var(--cian);
-  text-align: center;
-  margin-bottom: 12px;
-  opacity: 0.85;
-}
-.ventana__titulo-equipado { font-size: 0.68rem; color: var(--dorado); letter-spacing: 0.08em; }
-
-.clase {
-  margin-left: auto;
-  font-size: 0.68rem;
-  letter-spacing: 0.12em;
-  color: var(--cian);
-  border: 1px solid var(--borde);
-  border-radius: var(--radio);
-  padding: 3px 8px;
-}
-
-/* --------------------------------- vitales --------------------------------- */
-
-.vitales { display: grid; gap: 5px; margin-top: 10px; }
-.vital { display: grid; grid-template-columns: 28px 1fr auto; align-items: center; gap: 8px; }
-.vital__etiqueta { font-size: 0.56rem; letter-spacing: 0.12em; color: var(--tenue); }
-.vital__valor { font-size: 0.62rem; color: var(--tenue); min-width: 7ch; text-align: right; }
-.vital .barra { height: 10px; }
-.barra--hp .barra__relleno { background: linear-gradient(90deg, #7a1f2b, var(--rojo)); box-shadow: 0 0 10px rgba(255, 95, 109, 0.35); }
-.barra--mp .barra__relleno { background: linear-gradient(90deg, #1f4f8a, #6aa6ff); box-shadow: 0 0 10px rgba(106, 166, 255, 0.35); }
-.barra--fatiga .barra__relleno { background: linear-gradient(90deg, #8a6a1f, var(--dorado)); box-shadow: 0 0 10px rgba(255, 212, 121, 0.3); }
 
 /* -------------------------------- castigo -------------------------------- */
 

@@ -35,6 +35,12 @@ funciona sin conexión y todo tu progreso se guarda en tu propio dispositivo.
 9. **Tienda.** Con el oro compras pociones de vida y energía, piedras de doble
    experiencia, llaves para invocar puertas y el pergamino del perdón, que anula una
    penalización y te devuelve la racha.
+10. **Jefe de la semana.** Cada lunes aparece un jefe con barra de vida, calibrada a
+    partir de tu propia misión diaria (la experiencia de un día × 6). Cada objetivo que
+    completas le hace daño en el acto, escalado por tu poder de combate, y cerrar una
+    puerta pega el triple. Si cae antes del domingo sueltas experiencia y oro; si
+    sobrevive, escapa y pierdes la recompensa. No hay combate que jugar: el daño sale de
+    lo que haces de verdad.
 
 ## Cómo usarla
 
@@ -127,6 +133,7 @@ js/jugador/                    Nivel, experiencia, rango, estadísticas, vida y 
 js/misiones/                   Alta, edición, borrado y progreso de las misiones
 js/ciclo-diario/                Recompensa, racha, cambio de día y penalización
 js/puertas/                    Desafíos extra de rango E a S y su recompensa
+js/jefes/                      Jefe semanal: aparición, daño, victoria y huida
 js/titulos/                    Títulos desbloqueables y el que llevas equipado
 js/clases/                     Cambio de clase y su especialidad
 js/tienda/                     Objetos, compra con oro e inventario
@@ -156,8 +163,9 @@ npm install playwright && node pruebas/e2e.mjs
 Los números del juego están arriba de cada `reglas.js`: `js/ciclo-diario/` (`BONO_DIA`,
 `PENALIZACION_XP`, `PENALIZACION_HP`), `js/jugador/` (`PUNTOS_POR_NIVEL`, `FATIGA_MISION`
 y la curva `xpNecesaria`) y `js/recompensas/` (`MERMA_CASTIGO`, `ORO_POR_XP`). Los
-catálogos de títulos, clases, objetos y puertas viven en el `catalogo.js` de su feature:
-se pueden afinar sin tocar la interfaz.
+catálogos de títulos, clases, objetos, puertas y jefes viven en el `catalogo.js` de su
+feature — ahí se ajusta la dureza del jefe (`VIDA_POR_XP_DIARIA`, `GOLPE_PUERTA`) sin
+tocar la interfaz.
 
 > Proyecto personal y sin ánimo de lucro, inspirado en la estética de las novelas de
 > progresión. No está asociado a ninguna obra ni a sus autores.

@@ -58,6 +58,7 @@ export function estadoInicialJugador() {
     mp: null,
     castigosSuperados: 0,
     puertasCerradas: 0,
+    jefesDerrotados: 0,
   };
 }
 
@@ -100,6 +101,7 @@ export function normalizarJugador(jugador) {
     mp: datos.mp === null || datos.mp === undefined ? null : entero(datos.mp, 0, 0),
     castigosSuperados: entero(datos.castigosSuperados, 0, 0),
     puertasCerradas: entero(datos.puertasCerradas, 0, 0),
+    jefesDerrotados: entero(datos.jefesDerrotados, 0, 0),
   };
 }
 

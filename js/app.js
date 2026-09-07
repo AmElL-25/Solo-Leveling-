@@ -28,6 +28,9 @@ import {
 import { ajustarProgresoPuerta, fijarProgresoPuerta, cerrarPuerta } from './puertas/reglas.js';
 import { elPuertas, renderPuerta } from './puertas/vista.js';
 
+import { revisarSemana, golpear, danoPorMision } from './jefes/reglas.js';
+import { renderJefe } from './jefes/vista.js';
+
 import { revisarTitulos, equiparTitulo } from './titulos/reglas.js';
 import { elTitulos, renderTitulos } from './titulos/vista.js';
 
@@ -51,6 +54,7 @@ function render() {
   renderAvisoDiario(estado);
   renderCastigo(estado.castigo);
   renderPuerta(estado.puerta);
+  renderJefe(estado.jefe);
   renderTitulos(estado.jugador);
   renderClase(estado.jugador);
   renderTienda(estado);
@@ -110,6 +114,48 @@ function avisarNivel(resultado) {
   }
 }
 
+function avisarJefeCaido(caido) {
+  if (!caido) return;
+  notificar({
+    titulo: 'JEFE DERROTADO',
+    lineas: [
+      { texto: `${caido.nombre} (rango ${caido.rango}) ha caído.`, destacado: true },
+      { texto: `+${caido.xp} XP · +${caido.oro} oro` },
+      { texto: 'El lunes aparecerá otro.' },
+    ],
+    boton: 'RECIBIR',
+  });
+  pitido('nivel');
+  avisarNivel(caido);
+  avisarTitulos(caido.titulosNuevos);
+}
+
+function avisarSemana(cambio) {
+  if (!cambio) return;
+  if (cambio.huido) {
+    notificar({
+      titulo: 'EL JEFE HA ESCAPADO',
+      lineas: [
+        { texto: `${cambio.huido.nombre} sobrevivió a la semana.` },
+        { texto: 'Su recompensa se pierde. Nada más: el castigo ya lo llevan los días fallados.' },
+      ],
+      tipo: 'peligro',
+      boton: 'ENTENDIDO',
+    });
+    pitido('error');
+  }
+  notificar({
+    titulo: 'HA APARECIDO UN JEFE',
+    lineas: [
+      { texto: `${cambio.nuevo.nombre} — rango ${cambio.nuevo.rango}`, destacado: true },
+      { texto: `${cambio.nuevo.vidaMaxima} puntos de vida. Tienes hasta el domingo.` },
+      { texto: 'Cada objetivo que completes le hace daño; las puertas pegan el triple.' },
+    ],
+    boton: 'A POR ÉL',
+  });
+  pitido('puerta');
+}
+
 function avisarPuerta(puerta) {
   notificar({
     titulo: 'SE HA ABIERTO UNA PUERTA',
@@ -145,7 +191,7 @@ function avisarMisionDiaria() {
 
 function comprobarDia() {
   const resumen = sincronizarDia(estado);
-  if (!resumen) return false;
+  if (!resumen) return null;
 
   if (!resumen.completado) {
     const lineas = [
@@ -160,8 +206,13 @@ function comprobarDia() {
     pitido('error');
   }
 
-  if (resumen.puerta) avisarPuerta(resumen.puerta);
-  return true;
+  return resumen;
+}
+
+/** Avisos que van detrás de la misión diaria: primero lo de hoy, luego lo demás. */
+function avisarNovedades(resumen) {
+  if (resumen?.puerta) avisarPuerta(resumen.puerta);
+  avisarSemana(resumen?.jefe ?? revisarSemana(estado));
 }
 
 /* ------------------------------ pestañas ------------------------------ */
@@ -178,15 +229,22 @@ document.querySelectorAll('.pestana').forEach((boton) => {
 
 /* ------------------------------ misiones ------------------------------ */
 
-/** Completar un objetivo cansa; deshacerlo devuelve la fatiga. */
-function conFatiga(id, accion) {
+/**
+ * Completar un objetivo cansa y golpea al jefe de la semana; deshacerlo
+ * devuelve la fatiga y le cura el daño.
+ */
+function resolverObjetivo(id, accion) {
   const mision = estado.misiones.find((m) => m.id === id);
   if (!mision) return;
+
   const antes = misionCompleta(mision);
   accion();
   const ahora = misionCompleta(mision);
-  if (ahora && !antes) sumarFatiga(estado.jugador, FATIGA_MISION);
-  if (!ahora && antes) sumarFatiga(estado.jugador, -FATIGA_MISION);
+  if (ahora === antes) return;
+
+  const signo = ahora ? 1 : -1;
+  sumarFatiga(estado.jugador, FATIGA_MISION * signo);
+  avisarJefeCaido(golpear(estado, danoPorMision(estado.jugador, mision) * signo));
 }
 
 elMisiones.lista.addEventListener('click', (evento) => {
@@ -199,13 +257,13 @@ elMisiones.lista.addEventListener('click', (evento) => {
 
   switch (boton.dataset.accion) {
     case 'mas':
-      conFatiga(id, () => ajustarProgreso(estado.misiones, id, mision.paso));
+      resolverObjetivo(id, () => ajustarProgreso(estado.misiones, id, mision.paso));
       break;
     case 'menos':
-      conFatiga(id, () => ajustarProgreso(estado.misiones, id, -mision.paso));
+      resolverObjetivo(id, () => ajustarProgreso(estado.misiones, id, -mision.paso));
       break;
     case 'alternar':
-      conFatiga(id, () => fijarProgreso(estado.misiones, id, mision.progreso >= 1 ? 0 : 1));
+      resolverObjetivo(id, () => fijarProgreso(estado.misiones, id, mision.progreso >= 1 ? 0 : 1));
       break;
     case 'editar':
       abrirDialogoMision(mision);
@@ -224,7 +282,7 @@ elMisiones.lista.addEventListener('change', (evento) => {
   const campo = evento.target.closest('input[data-accion="fijar"]');
   if (!campo) return;
   const id = campo.closest('[data-id]')?.dataset.id;
-  conFatiga(id, () => fijarProgreso(estado.misiones, id, Number(campo.value)));
+  resolverObjetivo(id, () => fijarProgreso(estado.misiones, id, Number(campo.value)));
   actualizar();
 });
 
@@ -283,6 +341,7 @@ elPuertas.contenedor.addEventListener('click', (evento) => {
     pitido('oro');
     avisarNivel(resultado);
     avisarTitulos(resultado.titulosNuevos);
+    avisarJefeCaido(resultado.jefeCaido);
   } else if (boton.dataset.accion === 'puerta-mas') {
     ajustarProgresoPuerta(estado.puerta, estado.puerta.paso);
   } else if (boton.dataset.accion === 'puerta-menos') {
@@ -435,6 +494,7 @@ elAjustes.archivoImportar.addEventListener('change', async (evento) => {
   try {
     estado = importar(await archivo.text());
     comprobarDia();
+    revisarSemana(estado);
     configurarAnimaciones(estado.ajustes.animaciones);
     actualizar();
     notificar({ titulo: 'DATOS RESTAURADOS', lineas: [{ texto: 'Tu progreso ha vuelto al Sistema.' }] });
@@ -464,26 +524,33 @@ elAjustes.btnReiniciar.addEventListener('click', () => {
 // El reloj también detecta el cambio de día si la app se queda abierta.
 setInterval(() => {
   renderReloj();
-  if (estado.dia.fecha !== fechaHoy() && comprobarDia()) {
-    avisarMisionDiaria();
-    actualizar();
-  }
+  if (estado.dia.fecha === fechaHoy()) return;
+  const resumen = comprobarDia();
+  if (!resumen) return;
+  avisarMisionDiaria();
+  avisarNovedades(resumen);
+  actualizar();
 }, 30000);
 
 // Al volver a la app tras dejarla en segundo plano, revisamos la fecha.
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState !== 'visible') return;
   renderReloj();
-  if (comprobarDia()) avisarMisionDiaria();
+  const resumen = comprobarDia();
+  if (resumen) {
+    avisarMisionDiaria();
+    avisarNovedades(resumen);
+  }
   actualizar();
 });
 
 /* ------------------------------ arranque ------------------------------ */
 
 configurarAnimaciones(estado.ajustes.animaciones);
-comprobarDia();
+const resumenInicial = comprobarDia();
 avisarTitulos(revisarTitulos(estado));
 avisarMisionDiaria();
+avisarNovedades(resumenInicial);
 renderReloj();
 actualizar();
 

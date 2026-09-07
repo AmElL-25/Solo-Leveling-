@@ -10,6 +10,7 @@ import { estadoInicialJugador, normalizarJugador } from './jugador/reglas.js';
 import { misionesIniciales, normalizarMision } from './misiones/reglas.js';
 import { estadoInicialDia, normalizarDia, estadoInicialCastigo, normalizarCastigo } from './ciclo-diario/reglas.js';
 import { normalizarPuerta } from './puertas/reglas.js';
+import { normalizarJefe } from './jefes/reglas.js';
 import {
   inventarioInicial, normalizarInventario, estadoInicialEfectos, normalizarEfectos,
 } from './tienda/reglas.js';
@@ -25,6 +26,7 @@ export function estadoInicial() {
     jugador: estadoInicialJugador(),
     misiones: misionesIniciales(),
     puerta: null,
+    jefe: null,
     dia: estadoInicialDia(),
     castigo: estadoInicialCastigo(),
     inventario: inventarioInicial(),
@@ -51,6 +53,7 @@ export function normalizar(datos) {
     jugador: normalizarJugador(datos.jugador),
     misiones,
     puerta: normalizarPuerta(datos.puerta),
+    jefe: normalizarJefe(datos.jefe),
     dia: normalizarDia(datos.dia),
     castigo: normalizarCastigo(datos.castigo),
     inventario: normalizarInventario(datos.inventario),

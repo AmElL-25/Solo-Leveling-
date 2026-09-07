@@ -40,6 +40,13 @@ export const TITULOS = [
     condicion: (estado) => estado.jugador.puertasCerradas >= 10,
   },
   {
+    id: 'cazajefes',
+    nombre: 'Cazador de jefes',
+    descripcion: 'Derrota 5 jefes semanales.',
+    bono: 8,
+    condicion: (estado) => estado.jugador.jefesDerrotados >= 5,
+  },
+  {
     id: 'cazador',
     nombre: 'Cazador de élite',
     descripcion: 'Alcanza el nivel 20.',

@@ -592,3 +592,30 @@ body.en-castigo .rejilla {
   .objetos { grid-template-columns: repeat(2, 1fr); }
   .titulos { grid-template-columns: repeat(2, 1fr); }
 }
+
+
+/* ---------------------------- jefe de la semana ---------------------------- */
+
+.jefe {
+  border: 1px solid rgba(255, 95, 109, 0.45);
+  border-radius: var(--radio);
+  background: linear-gradient(180deg, rgba(122, 31, 43, 0.22), rgba(4, 12, 24, 0.55));
+  padding: 12px;
+  box-shadow: inset 0 0 30px rgba(255, 95, 109, 0.1);
+}
+.jefe .puerta__cabecera h3 { color: #ffb9be; }
+.jefe--derrotado {
+  border-color: rgba(69, 224, 160, 0.5);
+  background: rgba(20, 60, 48, 0.25);
+  box-shadow: none;
+}
+.jefe--derrotado .puerta__cabecera h3 { color: var(--verde); }
+.puerta__sello--jefe { color: #ffb9be; border-color: rgba(255, 95, 109, 0.6); text-shadow: 0 0 12px rgba(255, 95, 109, 0.5); }
+.jefe--derrotado .puerta__sello--jefe { color: var(--verde); border-color: rgba(69, 224, 160, 0.6); text-shadow: none; }
+
+.barra--jefe { height: 20px; }
+.barra--jefe .barra__relleno {
+  background: linear-gradient(90deg, #7a1f2b, var(--rojo));
+  box-shadow: 0 0 16px rgba(255, 95, 109, 0.45);
+}
+.jefe--derrotado .barra--jefe .barra__relleno { background: linear-gradient(90deg, #17624f, var(--verde)); }

@@ -2,7 +2,8 @@
    Levanta antes un servidor local (python3 -m http.server 8000) y ejecuta:
      npm install playwright && node pruebas/e2e.mjs
    Recorre el ciclo completo: misión diaria, fatiga, recompensa, oro, títulos,
-   puertas, tienda, inventario, cambio de clase, penalización y persistencia. */
+   puertas, tienda, inventario, cambio de clase, penalización, jefe semanal
+   y persistencia. */
 
 import { chromium } from 'playwright';
 
@@ -176,6 +177,92 @@ comprobar('se añade la misión', await page.locator('.mision').count() === 5);
 await page.reload();
 await page.waitForSelector('.mision');
 comprobar('la misión persiste', await page.locator('.mision').count() === 5);
+
+// 10. Jefe semanal: aparición, daño, curación y golpe de la puerta
+await page.evaluate(() => localStorage.clear());
+await page.reload();
+await page.waitForSelector('.mision');
+await aceptar();
+
+const conJefe = await leerEstado();
+comprobar('aparece un jefe al empezar la semana', Boolean(conJefe.jefe));
+comprobar('la vida del jefe sale de la misión diaria (180 XP × 6)',
+  conJefe.jefe.vidaMaxima === 1080, `(${conJefe.jefe?.vidaMaxima})`);
+comprobar('la tarjeta del jefe se pinta', await page.locator('.jefe').count() === 1);
+
+const campoFlexiones = page.locator('.mision').first().locator('input[data-accion="fijar"]');
+await campoFlexiones.fill('9999');
+await campoFlexiones.dispatchEvent('change');
+const golpeMision = 1080 - (await leerEstado()).jefe.vida;
+comprobar('completar un objetivo le hace daño', golpeMision > 0, `(${golpeMision} de daño)`);
+await campoFlexiones.fill('0');
+await campoFlexiones.dispatchEvent('change');
+comprobar('deshacer el objetivo le devuelve la vida', (await leerEstado()).jefe.vida === 1080);
+
+await escribirEstado({
+  puerta: {
+    id: 'p2', rango: 'E', nombre: 'Burpees', objetivo: 40, unidad: 'reps', paso: 5,
+    progreso: 0, xp: 60, oro: 40, stat: 'fuerza', cerrada: false,
+    fecha: new Date().toISOString().slice(0, 10),
+  },
+});
+await page.reload();
+await page.waitForSelector('.puerta');
+await aceptar();
+await page.locator('.puerta input[data-accion="puerta-fijar"]').fill('40');
+await page.locator('.puerta input[data-accion="puerta-fijar"]').dispatchEvent('change');
+await page.click('[data-accion="cerrar-puerta"]');
+await aceptar();
+const golpePuerta = 1080 - (await leerEstado()).jefe.vida;
+comprobar('la puerta pega más fuerte que un objetivo', golpePuerta > golpeMision * 2,
+  `(${golpePuerta} frente a ${golpeMision})`);
+
+// 11. Rematarlo: recompensa, contador y título
+const antesDeMatar = await leerEstado();
+await page.evaluate(() => {
+  const e = JSON.parse(localStorage.getItem('sistema:v1'));
+  e.jefe.vida = 5;
+  e.jugador.jefesDerrotados = 4;
+  e.misiones[1].progreso = 0;
+  localStorage.setItem('sistema:v1', JSON.stringify(e));
+});
+await page.reload();
+await page.waitForSelector('.mision');
+await aceptar();
+const oroPrevio = (await leerEstado()).jugador.oro;
+const campoAbdominales = page.locator('.mision').nth(1).locator('input[data-accion="fijar"]');
+await campoAbdominales.fill('9999');
+await campoAbdominales.dispatchEvent('change');
+comprobar('anuncia la derrota del jefe',
+  await page.locator('#noti-titulo').textContent() === 'JEFE DERROTADO');
+await aceptar();
+const matado = await leerEstado();
+comprobar('el jefe queda derrotado', matado.jefe.derrotado === true && matado.jefe.vida === 0);
+comprobar('paga oro por el jefe', matado.jugador.oro > oroPrevio, `(${matado.jugador.oro})`);
+comprobar('suma al contador de jefes', matado.jugador.jefesDerrotados === 5);
+comprobar('desbloquea el título Cazador de jefes', matado.jugador.titulos.includes('cazajefes'));
+comprobar('la tarjeta se marca como derrotada', await page.locator('.jefe--derrotado').count() === 1);
+
+// 12. Cambio de semana: el jefe vivo escapa y llega otro
+await page.evaluate(() => {
+  const e = JSON.parse(localStorage.getItem('sistema:v1'));
+  e.jefe = { ...e.jefe, semana: '2000-01-03', vida: 500, derrotado: false };
+  localStorage.setItem('sistema:v1', JSON.stringify(e));
+});
+await page.reload();
+await page.waitForSelector('.mision');
+comprobar('avisa de que el jefe escapó',
+  await page.locator('#noti-titulo').textContent() === 'EL JEFE HA ESCAPADO');
+await page.click('#noti-aceptar');
+await page.waitForTimeout(80);
+await page.click('#noti-aceptar');
+comprobar('aparece el jefe de la semana nueva',
+  await page.locator('#noti-titulo').textContent() === 'HA APARECIDO UN JEFE');
+await aceptar();
+const relevo = await leerEstado();
+comprobar('el jefe nuevo llega con toda la vida', relevo.jefe.vida === relevo.jefe.vidaMaxima);
+comprobar('el jefe nuevo es de esta semana', relevo.jefe.semana !== '2000-01-03');
+
 
 console.log(ok.join('\n'));
 if (fallos.length) console.log('\n' + fallos.join('\n'));

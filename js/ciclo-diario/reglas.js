@@ -12,6 +12,7 @@ import { registrarDia } from '../historial/reglas.js';
 import { multiplicadorXp, oroPorXp } from '../recompensas/reglas.js';
 import { revisarTitulos } from '../titulos/reglas.js';
 import { generarPuerta, hayPuertaHoy } from '../puertas/reglas.js';
+import { revisarSemana } from '../jefes/reglas.js';
 
 export const BONO_DIA = 0.5;         // +50 % de experiencia por completar la misión entera
 export const PENALIZACION_XP = 0.10; // se pierde el 10 % de la experiencia del nivel actual
@@ -134,6 +135,7 @@ export function sincronizarDia(estado, hoy = fechaHoy(), aleatorio = Math.random
     rachaPerdida: 0,
     vidaPerdida: 0,
     puerta: null,
+    jefe: null,
   };
 
   registrarDia(estado.historial, {
@@ -175,6 +177,9 @@ export function sincronizarDia(estado, hoy = fechaHoy(), aleatorio = Math.random
     estado.puerta = generarPuerta(estado.jugador.nivel, hoy, aleatorio);
     resumen.puerta = estado.puerta;
   }
+
+  // Si además cambió la semana, el jefe que siguiera vivo escapa y llega otro.
+  resumen.jefe = revisarSemana(estado, hoy, aleatorio);
 
   return resumen;
 }

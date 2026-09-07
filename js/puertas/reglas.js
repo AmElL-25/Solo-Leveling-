@@ -6,6 +6,7 @@ import { idNuevo } from '../nucleo/fecha.js';
 import { STATS, otorgarXp, sumarFatiga } from '../jugador/reglas.js';
 import { multiplicadorXp } from '../recompensas/reglas.js';
 import { revisarTitulos } from '../titulos/reglas.js';
+import { golpear, danoPorMision, GOLPE_PUERTA } from '../jefes/reglas.js';
 import { RANGOS_PUERTA, DESAFIOS_PUERTA, PROBABILIDAD_PUERTA } from './catalogo.js';
 
 export const FATIGA_PUERTA = 20;
@@ -97,6 +98,9 @@ export function cerrarPuerta(estado) {
   sumarFatiga(estado.jugador, FATIGA_PUERTA);
   puerta.cerrada = true;
 
+  // Despejar una puerta también castiga al jefe de la semana, y fuerte.
+  const jefeCaido = golpear(estado, danoPorMision(estado.jugador, puerta) * GOLPE_PUERTA);
+
   return {
     rango: puerta.rango,
     xp,
@@ -105,5 +109,6 @@ export function cerrarPuerta(estado) {
     nivelPrevio,
     nivel: estado.jugador.nivel,
     titulosNuevos: revisarTitulos(estado),
+    jefeCaido,
   };
 }

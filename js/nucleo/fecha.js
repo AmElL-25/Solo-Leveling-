@@ -28,3 +28,12 @@ export function diasEntre(desde, hasta) {
   if (Number.isNaN(a.getTime()) || Number.isNaN(b.getTime())) return 1;
   return Math.max(1, Math.round((b - a) / 86400000));
 }
+
+/** Lunes de la semana a la que pertenece una fecha YYYY-MM-DD. Identifica la semana. */
+export function lunesDeLaSemana(fecha = fechaHoy()) {
+  const dia = new Date(`${fecha}T00:00:00`);
+  if (Number.isNaN(dia.getTime())) return fecha;
+  const desplazamiento = (dia.getDay() + 6) % 7; // domingo (0) cuenta como último día
+  dia.setDate(dia.getDate() - desplazamiento);
+  return fechaHoy(dia);
+}

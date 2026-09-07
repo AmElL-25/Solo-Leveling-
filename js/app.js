@@ -21,9 +21,16 @@ import {
 } from './misiones/vista.js';
 
 import { sincronizarDia, completarDia, recompensaDia } from './ciclo-diario/reglas.js';
+import { elCicloDiario, renderReloj, renderAvisoDiario } from './ciclo-diario/vista.js';
+
 import {
-  elCicloDiario, renderReloj, renderAvisoDiario, renderCastigo,
-} from './ciclo-diario/vista.js';
+  aceptarCastigo, ajustarProgresoCastigo, fijarProgresoCastigo, cumplirCastigo,
+} from './castigo/reglas.js';
+import { elCastigo, renderCastigo } from './castigo/vista.js';
+
+import { misionesDePlantilla } from './misiones/reglas.js';
+import { buscarPlantilla } from './plantillas/catalogo.js';
+import { elPlantillas, renderPlantillas } from './plantillas/vista.js';
 
 import { ajustarProgresoPuerta, fijarProgresoPuerta, cerrarPuerta } from './puertas/reglas.js';
 import { elPuertas, renderPuerta } from './puertas/vista.js';
@@ -54,7 +61,7 @@ function render() {
   renderAvisoDiario(estado);
   renderCastigo(estado.castigo);
   renderPuerta(estado.puerta);
-  renderJefe(estado.jefe);
+  renderJefe(estado.jefe, estado.castigo.activo);
   renderTitulos(estado.jugador);
   renderClase(estado.jugador);
   renderTienda(estado);
@@ -130,6 +137,21 @@ function avisarJefeCaido(caido) {
   avisarTitulos(caido.titulosNuevos);
 }
 
+function avisarCastigo(castigo) {
+  if (!castigo) return;
+  notificar({
+    titulo: 'CASTIGO ASIGNADO',
+    lineas: [
+      { texto: castigo.mision.nombre, destacado: true },
+      { texto: `${castigo.mision.objetivo} ${castigo.mision.unidad} para saldar la deuda.` },
+      { texto: 'Acéptalo en la pestaña MISIÓN. Hasta cumplirlo no empieza una semana nueva.' },
+    ],
+    tipo: 'peligro',
+    boton: 'VER EL CASTIGO',
+  });
+  pitido('error');
+}
+
 function avisarSemana(cambio) {
   if (!cambio) return;
   if (cambio.huido) {
@@ -144,6 +166,20 @@ function avisarSemana(cambio) {
     });
     pitido('error');
   }
+  if (cambio.bloqueado) {
+    notificar({
+      titulo: 'SEMANA BLOQUEADA',
+      lineas: [
+        { texto: 'No habrá jefe hasta que saldes tu deuda.', destacado: true },
+        { texto: 'Cumple la misión de castigo y el Sistema abrirá la semana.' },
+      ],
+      tipo: 'peligro',
+      boton: 'ENTENDIDO',
+    });
+    pitido('error');
+    return;
+  }
+
   notificar({
     titulo: 'HA APARECIDO UN JEFE',
     lineas: [
@@ -212,6 +248,7 @@ function comprobarDia() {
 /** Avisos que van detrás de la misión diaria: primero lo de hoy, luego lo demás. */
 function avisarNovedades(resumen) {
   if (resumen?.puerta) avisarPuerta(resumen.puerta);
+  avisarCastigo(resumen?.castigo);
   avisarSemana(resumen?.jefe ?? revisarSemana(estado));
 }
 
@@ -311,7 +348,9 @@ elCicloDiario.btnCompletar.addEventListener('click', () => {
     { texto: `Racha: ${resultado.racha} ${resultado.racha === 1 ? 'día' : 'días'} · +1 punto de estadística.` },
   ];
   if (resultado.dobleUsado) lineas.push({ texto: 'Piedra de doble experiencia consumida.' });
-  if (resultado.salioDelCastigo) lineas.push({ texto: 'Has salido de la zona de penalización.' });
+  if (estado.castigo.activo) {
+    lineas.push({ texto: 'Sigues en penalización: cumple el castigo para recuperar la experiencia entera.' });
+  }
 
   notificar({ titulo: 'MISIÓN DIARIA COMPLETADA', lineas, boton: 'RECIBIR' });
   pitido('aviso');
@@ -356,6 +395,84 @@ elPuertas.contenedor.addEventListener('change', (evento) => {
   const campo = evento.target.closest('input[data-accion="puerta-fijar"]');
   if (!campo) return;
   fijarProgresoPuerta(estado.puerta, Number(campo.value));
+  actualizar();
+});
+
+/* --------------------------- misión de castigo --------------------------- */
+
+elCastigo.contenedor.addEventListener('click', (evento) => {
+  const boton = evento.target.closest('button[data-accion]');
+  if (!boton) return;
+
+  switch (boton.dataset.accion) {
+    case 'aceptar-castigo':
+      if (!aceptarCastigo(estado)) return;
+      notificar({
+        titulo: 'CASTIGO ACEPTADO',
+        lineas: [
+          { texto: estado.castigo.mision.nombre, destacado: true },
+          { texto: 'Cúmplelo y el Sistema volverá a abrir la semana.' },
+        ],
+        tipo: 'peligro',
+        boton: 'A CUMPLIRLO',
+      });
+      pitido('error');
+      break;
+    case 'castigo-mas':
+      ajustarProgresoCastigo(estado, estado.castigo.mision.paso);
+      break;
+    case 'castigo-menos':
+      ajustarProgresoCastigo(estado, -estado.castigo.mision.paso);
+      break;
+    case 'cumplir-castigo': {
+      const saldado = cumplirCastigo(estado);
+      if (!saldado) return;
+      notificar({
+        titulo: 'DEUDA SALDADA',
+        lineas: [
+          { texto: 'Has cumplido el castigo.', destacado: true },
+          { texto: 'Vuelves a ganar toda la experiencia.' },
+        ],
+        boton: 'SEGUIR',
+      });
+      pitido('nivel');
+      avisarTitulos(revisarTitulos(estado));
+      avisarSemana(revisarSemana(estado));
+      break;
+    }
+    default:
+      return;
+  }
+  actualizar();
+});
+
+elCastigo.contenedor.addEventListener('change', (evento) => {
+  const campo = evento.target.closest('input[data-accion="castigo-fijar"]');
+  if (!campo) return;
+  fijarProgresoCastigo(estado, Number(campo.value));
+  actualizar();
+});
+
+/* ------------------------------ plantillas ------------------------------ */
+
+renderPlantillas();
+
+elPlantillas.lista.addEventListener('click', (evento) => {
+  const boton = evento.target.closest('button[data-plantilla]');
+  if (!boton) return;
+  const plantilla = buscarPlantilla(boton.dataset.plantilla);
+  if (!confirm(`Se sustituirán tus misiones diarias por "${plantilla.nombre}". ¿Continuar?`)) return;
+
+  estado.misiones = misionesDePlantilla(plantilla.id);
+  estado.dia.completado = false;
+  notificar({
+    titulo: 'MISIÓN DIARIA ACTUALIZADA',
+    lineas: [
+      { texto: plantilla.nombre, destacado: true },
+      { texto: `${plantilla.misiones.length} objetivos nuevos para cada día.` },
+    ],
+  });
+  pitido('aviso');
   actualizar();
 });
 

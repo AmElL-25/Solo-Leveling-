@@ -13,6 +13,7 @@ import { multiplicadorXp, oroPorXp } from '../recompensas/reglas.js';
 import { revisarTitulos } from '../titulos/reglas.js';
 import { generarPuerta, hayPuertaHoy } from '../puertas/reglas.js';
 import { revisarSemana } from '../jefes/reglas.js';
+import { asignarCastigo } from '../castigo/reglas.js';
 
 export const BONO_DIA = 0.5;         // +50 % de experiencia por completar la misión entera
 export const PENALIZACION_XP = 0.10; // se pierde el 10 % de la experiencia del nivel actual
@@ -21,10 +22,6 @@ export const CURACION_DIA = 0.25;    // cumplir el día cura otro tanto
 
 export function estadoInicialDia() {
   return { fecha: fechaHoy(), completado: false, xpGanada: 0, avisado: false };
-}
-
-export function estadoInicialCastigo() {
-  return { activo: false, desde: null, rachaPerdida: 0 };
 }
 
 function num(valor, porDefecto, minimo = -Infinity) {
@@ -44,14 +41,6 @@ export function normalizarDia(dia) {
     completado: Boolean(datos.completado),
     xpGanada: entero(datos.xpGanada, 0, 0),
     avisado: Boolean(datos.avisado),
-  };
-}
-
-export function normalizarCastigo(castigo) {
-  return {
-    activo: Boolean(castigo?.activo),
-    desde: castigo?.desde ? String(castigo.desde).slice(0, 10) : null,
-    rachaPerdida: entero(castigo?.rachaPerdida, 0, 0),
   };
 }
 
@@ -92,12 +81,6 @@ export function completarDia(estado) {
     vidaActual(jugador) + Math.round(vidaMaxima(jugador) * CURACION_DIA),
   );
 
-  const salioDelCastigo = estado.castigo.activo;
-  if (salioDelCastigo) {
-    estado.castigo = estadoInicialCastigo();
-    jugador.castigosSuperados += 1;
-  }
-
   const dobleUsado = estado.efectos.dobleXp;
   estado.efectos.dobleXp = false;
 
@@ -110,7 +93,6 @@ export function completarDia(estado) {
     nivelPrevio,
     nivel: jugador.nivel,
     racha: jugador.racha,
-    salioDelCastigo,
     dobleUsado,
     titulosNuevos: revisarTitulos(estado),
   };
@@ -136,6 +118,7 @@ export function sincronizarDia(estado, hoy = fechaHoy(), aleatorio = Math.random
     vidaPerdida: 0,
     puerta: null,
     jefe: null,
+    castigo: null,
   };
 
   registrarDia(estado.historial, {
@@ -158,11 +141,7 @@ export function sincronizarDia(estado, hoy = fechaHoy(), aleatorio = Math.random
     resumen.vidaPerdida = dano;
     resumen.rachaPerdida = jugador.racha;
 
-    estado.castigo = {
-      activo: true,
-      desde: hoy,
-      rachaPerdida: jugador.racha || estado.castigo.rachaPerdida,
-    };
+    resumen.castigo = asignarCastigo(estado, 'dia', hoy, aleatorio);
     jugador.racha = 0;
   }
 
@@ -180,6 +159,9 @@ export function sincronizarDia(estado, hoy = fechaHoy(), aleatorio = Math.random
 
   // Si además cambió la semana, el jefe que siguiera vivo escapa y llega otro.
   resumen.jefe = revisarSemana(estado, hoy, aleatorio);
+  if (resumen.jefe?.huido) {
+    resumen.castigo = asignarCastigo(estado, 'jefe', hoy, aleatorio) ?? resumen.castigo;
+  }
 
   return resumen;
 }

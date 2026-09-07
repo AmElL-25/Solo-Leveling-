@@ -8,7 +8,8 @@
 import { leer, escribir, eliminar } from './nucleo/almacenamiento.js';
 import { estadoInicialJugador, normalizarJugador } from './jugador/reglas.js';
 import { misionesIniciales, normalizarMision } from './misiones/reglas.js';
-import { estadoInicialDia, normalizarDia, estadoInicialCastigo, normalizarCastigo } from './ciclo-diario/reglas.js';
+import { estadoInicialDia, normalizarDia } from './ciclo-diario/reglas.js';
+import { estadoInicialCastigo, normalizarCastigo } from './castigo/reglas.js';
 import { normalizarPuerta } from './puertas/reglas.js';
 import { normalizarJefe } from './jefes/reglas.js';
 import {

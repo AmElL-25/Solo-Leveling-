@@ -1,6 +1,6 @@
 /* ==========================================================================
-   Feature: ciclo diario — el reloj hasta medianoche, el aviso de la misión
-   diaria y la banda de la zona de penalización.
+   Feature: ciclo diario — el reloj hasta medianoche y el aviso de la misión
+   diaria. La banda del castigo la pinta su propia feature.
    ========================================================================== */
 
 import { msHastaMedianoche } from '../nucleo/fecha.js';
@@ -13,8 +13,6 @@ export const elCicloDiario = {
   reloj: $('#reloj'),
   avisoDiaria: $('#aviso-diaria'),
   btnCompletar: $('#btn-completar'),
-  bandaCastigo: $('#banda-castigo'),
-  castigoTexto: $('#castigo-texto'),
 };
 
 export function renderReloj() {
@@ -43,14 +41,5 @@ export function renderAvisoDiario(estado) {
   } else {
     elCicloDiario.avisoDiaria.textContent =
       'ADVERTENCIA: si no completas la misión diaria recibirás el castigo correspondiente.';
-  }
-}
-
-export function renderCastigo(castigo) {
-  elCicloDiario.bandaCastigo.hidden = !castigo.activo;
-  document.body.classList.toggle('en-castigo', castigo.activo);
-  if (castigo.activo) {
-    elCicloDiario.castigoTexto.textContent =
-      'Fallaste la misión diaria. Ganas la mitad de experiencia hasta que completes un día entero.';
   }
 }

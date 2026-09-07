@@ -6,15 +6,26 @@
 
 import { idNuevo } from '../nucleo/fecha.js';
 import { STATS } from '../jugador/reglas.js';
+import { buscarPlantilla, PLANTILLA_INICIAL } from '../plantillas/catalogo.js';
 
-/** La misión diaria de partida: el set clásico del Sistema. */
+/** Convierte una plantilla del catálogo en misiones listas para jugar. */
+export function misionesDePlantilla(id) {
+  return buscarPlantilla(id).misiones.map((m) => ({
+    id: idNuevo(),
+    tipo: m.tipo ?? 'contador',
+    objetivo: m.tipo === 'checkbox' ? 1 : m.objetivo,
+    unidad: m.tipo === 'checkbox' ? '' : m.unidad,
+    paso: m.tipo === 'checkbox' ? 1 : m.paso,
+    progreso: 0,
+    nombre: m.nombre,
+    xp: m.xp,
+    stat: m.stat,
+  }));
+}
+
+/** La misión diaria de partida. */
 export function misionesIniciales() {
-  return [
-    { nombre: 'Flexiones',   objetivo: 100, unidad: 'reps', paso: 10, xp: 40, stat: 'fuerza' },
-    { nombre: 'Abdominales', objetivo: 100, unidad: 'reps', paso: 10, xp: 40, stat: 'vitalidad' },
-    { nombre: 'Sentadillas', objetivo: 100, unidad: 'reps', paso: 10, xp: 40, stat: 'fuerza' },
-    { nombre: 'Carrera',     objetivo: 10,  unidad: 'km',   paso: 1,  xp: 60, stat: 'agilidad' },
-  ].map((m) => ({ id: idNuevo(), tipo: 'contador', progreso: 0, ...m }));
+  return misionesDePlantilla(PLANTILLA_INICIAL);
 }
 
 function num(valor, porDefecto, minimo = -Infinity) {

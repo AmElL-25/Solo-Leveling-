@@ -6,6 +6,7 @@
 import { fechaHoy } from '../nucleo/fecha.js';
 import { vidaMaxima, vidaActual } from '../jugador/reglas.js';
 import { generarPuerta } from '../puertas/reglas.js';
+import { estadoInicialCastigo } from '../castigo/reglas.js';
 import { OBJETOS, buscarObjeto } from './catalogo.js';
 
 export function inventarioInicial() {
@@ -79,7 +80,7 @@ export function usar(estado, objetoId, aleatorio = Math.random) {
       if (!estado.castigo.activo) return null;
       jugador.racha = estado.castigo.rachaPerdida;
       jugador.mejorRacha = Math.max(jugador.mejorRacha, jugador.racha);
-      estado.castigo = { activo: false, desde: null, rachaPerdida: 0 };
+      estado.castigo = estadoInicialCastigo();
       mensaje = `Penalización anulada. Racha recuperada: ${jugador.racha} días.`;
       break;
     }

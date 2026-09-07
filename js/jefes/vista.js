@@ -25,12 +25,14 @@ function diasRestantes(semana, hoy = fechaHoy()) {
   return 7 - ((dia.getDay() + 6) % 7);
 }
 
-export function renderJefe(jefe) {
+export function renderJefe(jefe, semanaBloqueada = false) {
   elJefes.rango.hidden = !jefe;
 
   if (!jefe) {
-    elJefes.contenedor.innerHTML =
-      '<p class="vacio">Ningún jefe a la vista. El próximo lunes aparecerá uno.</p>';
+    elJefes.contenedor.innerHTML = semanaBloqueada
+      ? `<p class="vacio vacio--peligro">El Sistema no abrirá la semana hasta que saldes tu deuda.
+         Cumple la misión de castigo y aparecerá un jefe.</p>`
+      : '<p class="vacio">Ningún jefe a la vista. El próximo lunes aparecerá uno.</p>';
     return;
   }
 

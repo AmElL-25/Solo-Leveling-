@@ -619,3 +619,30 @@ body.en-castigo .rejilla {
   box-shadow: 0 0 16px rgba(255, 95, 109, 0.45);
 }
 .jefe--derrotado .barra--jefe .barra__relleno { background: linear-gradient(90deg, #17624f, var(--verde)); }
+
+
+/* ------------------------------ misión de castigo ------------------------------ */
+
+.separador { height: 1px; background: var(--borde); margin: 18px 0; }
+
+.insignia--peligro { color: var(--rojo); border-color: rgba(255, 95, 109, 0.5); }
+
+.castigo-mision {
+  border: 1px solid rgba(255, 95, 109, 0.55);
+  border-radius: var(--radio);
+  background: linear-gradient(180deg, rgba(122, 31, 43, 0.28), rgba(4, 12, 24, 0.55));
+  padding: 12px;
+  box-shadow: inset 0 0 30px rgba(255, 95, 109, 0.12);
+}
+.castigo-mision .puerta__cabecera h3 { color: #ffb9be; }
+.puerta__sello--castigo {
+  color: var(--rojo);
+  border-color: rgba(255, 95, 109, 0.7);
+  text-shadow: 0 0 12px rgba(255, 95, 109, 0.6);
+}
+.barra--castigo .barra__relleno {
+  background: linear-gradient(90deg, #7a1f2b, var(--rojo));
+  box-shadow: 0 0 14px rgba(255, 95, 109, 0.4);
+}
+
+.vacio--peligro { color: #ffb9be; border-color: rgba(255, 95, 109, 0.45); }

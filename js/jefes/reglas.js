@@ -7,6 +7,7 @@
 import { fechaHoy, idNuevo, lunesDeLaSemana } from '../nucleo/fecha.js';
 import { poderCombate, otorgarXp } from '../jugador/reglas.js';
 import { revisarTitulos } from '../titulos/reglas.js';
+import { castigoPendiente } from '../castigo/reglas.js';
 import {
   NOMBRES_JEFE, RANGOS_JEFE, VIDA_POR_XP_DIARIA, GOLPE_PUERTA,
   RECOMPENSA_XP, RECOMPENSA_ORO,
@@ -43,13 +44,16 @@ function rangoParaNivel(nivel) {
  * más ambiciosos se enfrenta a un jefe más duro, y el reto sigue siendo el
  * mismo para todos: unos seis días de constancia.
  */
-export function vidaDelJefe(misiones) {
+export function vidaDelJefe(misiones, jugador) {
   const xpDiaria = misiones.reduce((total, m) => total + m.xp, 0);
-  return Math.max(100, Math.round(xpDiaria * VIDA_POR_XP_DIARIA));
+  // El daño diario crece con el poder de combate, así que la vida crece igual:
+  // el jefe siempre cuesta unos seis días, al nivel 1 y al 60.
+  const escala = 1 + poderCombate(jugador) / 1500;
+  return Math.max(100, Math.round(xpDiaria * VIDA_POR_XP_DIARIA * escala));
 }
 
 export function generarJefe(estado, semana = lunesDeLaSemana(fechaHoy()), aleatorio = Math.random) {
-  const vidaMaxima = vidaDelJefe(estado.misiones);
+  const vidaMaxima = vidaDelJefe(estado.misiones, estado.jugador);
   return {
     id: idNuevo(),
     nombre: NOMBRES_JEFE[Math.floor(aleatorio() * NOMBRES_JEFE.length)],
@@ -74,8 +78,13 @@ export function revisarSemana(estado, hoy = fechaHoy(), aleatorio = Math.random)
   if (anterior && anterior.semana === semana) return null;
 
   const huido = jefeVivo(anterior) ? { nombre: anterior.nombre, rango: anterior.rango } : null;
+  if (huido) estado.jefe = null;
+
+  // Con una deuda pendiente no arranca una semana nueva: primero se paga.
+  if (castigoPendiente(estado)) return { huido, nuevo: null, bloqueado: true };
+
   estado.jefe = generarJefe(estado, semana, aleatorio);
-  return { huido, nuevo: estado.jefe };
+  return { huido, nuevo: estado.jefe, bloqueado: false };
 }
 
 /** Golpe por cumplir un objetivo: la experiencia de la misión, escalada por el poder. */

@@ -9,9 +9,11 @@ funciona sin conexión y todo tu progreso se guarda en tu propio dispositivo.
 
 ## Cómo se juega
 
-1. **Misión diaria.** Arranca con el set clásico: 100 flexiones, 100 abdominales,
-   100 sentadillas y 10 km de carrera. Puedes añadir, editar o borrar las tuyas
-   (ejercicio, estudio, hábitos… lo que quieras).
+1. **Misión diaria.** Arranca con el set de **gerente de ventas + físico**: prospección,
+   reunión con el equipo, uno a uno con un vendedor, propuestas, formación, fuerza,
+   cardio, agua y sueño. En **AJUSTES → MISIONES DIARIAS** puedes cambiar a otro set
+   (solo trabajo, solo físico o el clásico del Sistema), y toda misión se edita, se
+   añade o se borra a mano.
 2. **Recompensa.** Al completar los objetivos del día se habilita `RECLAMAR RECOMPENSA`:
    la experiencia de cada misión **+50 % de bonificación**, **oro** y **+1 punto de
    estadística**.
@@ -20,27 +22,28 @@ funciona sin conexión y todo tu progreso se guarda en tu propio dispositivo.
 4. **Ventana de estado.** La vida sale de Vitalidad y el maná de Inteligencia; la fatiga
    sube al completar objetivos y se va al dormir. El **poder de combate** resume
    estadísticas, nivel, clase y título en un solo número.
-5. **Penalización.** Si a medianoche la misión no está completa entras en la **zona de
-   penalización**: se rompe la racha, pierdes el 10 % de la experiencia del nivel y una
-   parte de la vida, y **ganas la mitad de experiencia** hasta que completes un día
-   entero. Nunca bajas de nivel.
-6. **Puertas.** Casi la mitad de los días se abre una puerta de rango E a S con un
+5. **Jefe de la semana.** Cada lunes aparece un jefe con barra de vida, calibrada con tu
+   propia misión diaria y tu poder: siempre cuesta unos seis días de constancia. Cada
+   objetivo que completas le hace daño en el acto y **cerrar una puerta pega el triple**.
+   La semana cierra el **domingo a medianoche**: si el jefe sigue vivo, escapa.
+6. **Castigo.** Fallar el día —o dejar escapar al jefe— abre la **zona de penalización**:
+   se rompe la racha, pierdes experiencia y vida, y el Sistema te asigna una **misión de
+   castigo** (100 flexiones, 8 km, 30 contactos extra…). Hay que **aceptarla y
+   cumplirla**: mientras la debas ganas la mitad de experiencia y **no empieza una semana
+   nueva** — no aparecerá ningún jefe hasta que saldes la deuda. Cumplir el día no
+   perdona el castigo; solo lo hacen la penitencia o el pergamino del perdón.
+7. **Puertas.** Casi la mitad de los días se abre una puerta de rango E a S con un
    desafío extra. Es opcional y no penaliza, pero paga experiencia y oro, y se cierra
    sola a medianoche.
-7. **Títulos.** Se desbloquean por logros (primera misión, racha de 7, salir de una
-   penalización, cerrar 10 puertas, niveles altos…) y el que equipes da experiencia extra.
-8. **Cambio de clase.** Al nivel 10 el Sistema te ofrece especializarte: Guerrero,
+8. **Títulos.** Se desbloquean por logros (primera misión, racha de 7, salir de una
+   penalización, cerrar 10 puertas, 5 jefes, niveles altos…) y el que equipes da
+   experiencia extra.
+9. **Cambio de clase.** Al nivel 10 el Sistema te ofrece especializarte: Guerrero,
    Asesino, Tanque, Mago o Explorador. Da +15 % de experiencia en las misiones de tu
    estadística y 3 puntos en ella. Se elige una sola vez.
-9. **Tienda.** Con el oro compras pociones de vida y energía, piedras de doble
-   experiencia, llaves para invocar puertas y el pergamino del perdón, que anula una
-   penalización y te devuelve la racha.
-10. **Jefe de la semana.** Cada lunes aparece un jefe con barra de vida, calibrada a
-    partir de tu propia misión diaria (la experiencia de un día × 6). Cada objetivo que
-    completas le hace daño en el acto, escalado por tu poder de combate, y cerrar una
-    puerta pega el triple. Si cae antes del domingo sueltas experiencia y oro; si
-    sobrevive, escapa y pierdes la recompensa. No hay combate que jugar: el daño sale de
-    lo que haces de verdad.
+10. **Tienda.** Con el oro compras pociones de vida y energía, piedras de doble
+    experiencia, llaves para invocar puertas y el pergamino del perdón, que anula la
+    penalización y te devuelve la racha.
 
 ## Cómo usarla
 
@@ -134,6 +137,8 @@ js/misiones/                   Alta, edición, borrado y progreso de las misione
 js/ciclo-diario/                Recompensa, racha, cambio de día y penalización
 js/puertas/                    Desafíos extra de rango E a S y su recompensa
 js/jefes/                      Jefe semanal: aparición, daño, victoria y huida
+js/castigo/                    Misión de castigo: asignación, aceptación y deuda
+js/plantillas/                 Sets de misión diaria para distintas vidas
 js/titulos/                    Títulos desbloqueables y el que llevas equipado
 js/clases/                     Cambio de clase y su especialidad
 js/tienda/                     Objetos, compra con oro e inventario
@@ -163,9 +168,10 @@ npm install playwright && node pruebas/e2e.mjs
 Los números del juego están arriba de cada `reglas.js`: `js/ciclo-diario/` (`BONO_DIA`,
 `PENALIZACION_XP`, `PENALIZACION_HP`), `js/jugador/` (`PUNTOS_POR_NIVEL`, `FATIGA_MISION`
 y la curva `xpNecesaria`) y `js/recompensas/` (`MERMA_CASTIGO`, `ORO_POR_XP`). Los
-catálogos de títulos, clases, objetos, puertas y jefes viven en el `catalogo.js` de su
-feature — ahí se ajusta la dureza del jefe (`VIDA_POR_XP_DIARIA`, `GOLPE_PUERTA`) sin
-tocar la interfaz.
+catálogos de títulos, clases, objetos, puertas, jefes, castigos y plantillas viven en el
+`catalogo.js` de su feature — ahí se ajusta la dureza del jefe (`VIDA_POR_XP_DIARIA`,
+`GOLPE_PUERTA`), el contenido de los castigos y los sets de misiones, sin tocar la
+interfaz.
 
 > Proyecto personal y sin ánimo de lucro, inspirado en la estética de las novelas de
 > progresión. No está asociado a ninguna obra ni a sus autores.

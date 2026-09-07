@@ -7,6 +7,7 @@
 import { cargar, guardar, borrar, estadoInicial, exportar, importar } from './progreso.js';
 import { fechaHoy } from './nucleo/fecha.js';
 import { notificar, sonar, configurarAnimaciones } from './notificaciones/notificaciones.js';
+import { despertarSonido } from './sonido/sintetizador.js';
 
 import {
   STATS, xpNecesaria, asignarPunto, sumarFatiga, FATIGA_MISION,
@@ -92,7 +93,7 @@ function avisarTitulos(titulos) {
       ],
     });
   }
-  if (titulos.length) pitido('nivel');
+  if (titulos.length) pitido('logro');
 }
 
 function avisarNivel(resultado) {
@@ -132,7 +133,7 @@ function avisarJefeCaido(caido) {
     ],
     boton: 'RECIBIR',
   });
-  pitido('nivel');
+  pitido('jefe');
   avisarNivel(caido);
   avisarTitulos(caido.titulosNuevos);
 }
@@ -281,6 +282,7 @@ function resolverObjetivo(id, accion) {
 
   const signo = ahora ? 1 : -1;
   sumarFatiga(estado.jugador, FATIGA_MISION * signo);
+  if (ahora) pitido('objetivo');
   avisarJefeCaido(golpear(estado, danoPorMision(estado.jugador, mision) * signo));
 }
 
@@ -294,9 +296,11 @@ elMisiones.lista.addEventListener('click', (evento) => {
 
   switch (boton.dataset.accion) {
     case 'mas':
+      pitido('toque');
       resolverObjetivo(id, () => ajustarProgreso(estado.misiones, id, mision.paso));
       break;
     case 'menos':
+      pitido('toque');
       resolverObjetivo(id, () => ajustarProgreso(estado.misiones, id, -mision.paso));
       break;
     case 'alternar':
@@ -308,6 +312,7 @@ elMisiones.lista.addEventListener('click', (evento) => {
     case 'borrar':
       if (!confirm(`¿Eliminar la misión "${mision.nombre}"?`)) return;
       eliminarMision(estado.misiones, id);
+      pitido('guardar');
       break;
     default:
       return;
@@ -332,6 +337,7 @@ elMisiones.formMision.addEventListener('submit', (evento) => {
   if (!datos.nombre) return;
   guardarMision(estado.misiones, datos);
   cerrarDialogoMision();
+  pitido('guardar');
   actualizar();
 });
 
@@ -353,7 +359,7 @@ elCicloDiario.btnCompletar.addEventListener('click', () => {
   }
 
   notificar({ titulo: 'MISIÓN DIARIA COMPLETADA', lineas, boton: 'RECIBIR' });
-  pitido('aviso');
+  pitido('logro');
 
   avisarNivel(resultado);
   avisarTitulos(resultado.titulosNuevos);
@@ -382,8 +388,10 @@ elPuertas.contenedor.addEventListener('click', (evento) => {
     avisarTitulos(resultado.titulosNuevos);
     avisarJefeCaido(resultado.jefeCaido);
   } else if (boton.dataset.accion === 'puerta-mas') {
+    pitido('toque');
     ajustarProgresoPuerta(estado.puerta, estado.puerta.paso);
   } else if (boton.dataset.accion === 'puerta-menos') {
+    pitido('toque');
     ajustarProgresoPuerta(estado.puerta, -estado.puerta.paso);
   } else {
     return;
@@ -419,9 +427,11 @@ elCastigo.contenedor.addEventListener('click', (evento) => {
       pitido('error');
       break;
     case 'castigo-mas':
+      pitido('toque');
       ajustarProgresoCastigo(estado, estado.castigo.mision.paso);
       break;
     case 'castigo-menos':
+      pitido('toque');
       ajustarProgresoCastigo(estado, -estado.castigo.mision.paso);
       break;
     case 'cumplir-castigo': {
@@ -435,7 +445,7 @@ elCastigo.contenedor.addEventListener('click', (evento) => {
         ],
         boton: 'SEGUIR',
       });
-      pitido('nivel');
+      pitido('logro');
       avisarTitulos(revisarTitulos(estado));
       avisarSemana(revisarSemana(estado));
       break;
@@ -472,7 +482,7 @@ elPlantillas.lista.addEventListener('click', (evento) => {
       { texto: `${plantilla.misiones.length} objetivos nuevos para cada día.` },
     ],
   });
-  pitido('aviso');
+  pitido('guardar');
   actualizar();
 });
 
@@ -482,7 +492,7 @@ elJugador.stats.addEventListener('click', (evento) => {
   const boton = evento.target.closest('button[data-stat]');
   if (!boton) return;
   if (asignarPunto(estado.jugador, boton.dataset.stat)) {
-    pitido('nivel');
+    pitido('punto');
     actualizar();
   }
 });
@@ -491,7 +501,7 @@ elTitulos.lista.addEventListener('click', (evento) => {
   const boton = evento.target.closest('button[data-titulo]');
   if (!boton || boton.disabled) return;
   if (equiparTitulo(estado.jugador, boton.dataset.titulo)) {
-    pitido('aviso');
+    pitido('guardar');
     actualizar();
   }
 });
@@ -568,7 +578,7 @@ elTienda.inventario.addEventListener('click', (evento) => {
       { texto: resultado.mensaje },
     ],
   });
-  pitido('aviso');
+  pitido('guardar');
   avisarTitulos(revisarTitulos(estado));
   actualizar();
 });
@@ -579,6 +589,7 @@ elJugador.btnNombre.addEventListener('click', () => {
   const nombre = prompt('Nombre del jugador:', estado.jugador.nombre);
   if (nombre === null) return;
   estado.jugador.nombre = nombre.trim().slice(0, 24) || 'Jugador';
+  pitido('guardar');
   actualizar();
 });
 
@@ -662,6 +673,10 @@ document.addEventListener('visibilitychange', () => {
 });
 
 /* ------------------------------ arranque ------------------------------ */
+
+// Los navegadores bloquean el audio hasta el primer toque del usuario.
+document.addEventListener('pointerdown', despertarSonido, { once: true });
+document.addEventListener('keydown', despertarSonido, { once: true });
 
 configurarAnimaciones(estado.ajustes.animaciones);
 const resumenInicial = comprobarDia();

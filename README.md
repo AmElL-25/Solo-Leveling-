@@ -109,6 +109,18 @@ En ambos casos queda en la pantalla de inicio con su icono, se abre a pantalla c
 - Automático, contra la URL publicada:
   `BASE=https://tu-app.vercel.app/ node pruebas/pwa.mjs`
 
+## Sonido
+
+Los avisos se sintetizan al vuelo con la Web Audio API: no hay archivos de audio, así que
+la app no engorda y no usa material de nadie. El timbre imita las campanas de las ventanas
+del Sistema —fundamental más armónicos, ataque instantáneo y caída larga— y cada acción
+tiene el suyo: aviso, subida de nivel, logro, oro, puerta, jefe derrotado, castigo,
+guardar una edición, repartir un punto, cumplir un objetivo y un toque corto al mover un
+contador. Todo en `js/sonido/sintetizador.js`, y se apaga desde AJUSTES.
+
+Los navegadores no dejan sonar nada hasta que tocas la pantalla: el primer aviso de cada
+sesión puede quedarse mudo.
+
 ## Tus datos
 
 El progreso vive en el `localStorage` del navegador: no sale de tu dispositivo, pero se
@@ -139,6 +151,7 @@ js/puertas/                    Desafíos extra de rango E a S y su recompensa
 js/jefes/                      Jefe semanal: aparición, daño, victoria y huida
 js/castigo/                    Misión de castigo: asignación, aceptación y deuda
 js/plantillas/                 Sets de misión diaria para distintas vidas
+js/sonido/                     Sintetizador de los avisos del Sistema
 js/titulos/                    Títulos desbloqueables y el que llevas equipado
 js/clases/                     Cambio de clase y su especialidad
 js/tienda/                     Objetos, compra con oro e inventario
@@ -157,6 +170,7 @@ vercel.json                    Cabeceras del despliegue (tipo del manifest, cach
 iconos/                        Icono en SVG y los PNG de la pantalla de inicio
 pruebas/e2e.mjs                Prueba automática del ciclo completo (opcional)
 pruebas/pwa.mjs                Prueba automática de los requisitos de PWA (opcional)
+pruebas/sonido.mjs             Comprobación del sintetizador de sonido (opcional)
 ```
 
 Para pasar la prueba automática, con el servidor local en marcha:

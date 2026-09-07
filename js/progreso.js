@@ -8,25 +8,37 @@
 import { leer, escribir, eliminar } from './nucleo/almacenamiento.js';
 import { estadoInicialJugador, normalizarJugador } from './jugador/reglas.js';
 import { misionesIniciales, normalizarMision } from './misiones/reglas.js';
-import { estadoInicialDia, normalizarDia } from './ciclo-diario/reglas.js';
+import { estadoInicialDia, normalizarDia, estadoInicialCastigo, normalizarCastigo } from './ciclo-diario/reglas.js';
+import { normalizarPuerta } from './puertas/reglas.js';
+import {
+  inventarioInicial, normalizarInventario, estadoInicialEfectos, normalizarEfectos,
+} from './tienda/reglas.js';
 import { normalizarHistorial } from './historial/reglas.js';
 import { estadoInicialAjustes, normalizarAjustes } from './ajustes/reglas.js';
 
-export const CLAVE = 'sistema:v1';
-export const VERSION = 1;
+export const CLAVE = 'sistema:v1';   // el hueco de almacenamiento no cambia de nombre
+export const VERSION = 2;            // ...pero el contenido sí evoluciona
 
 export function estadoInicial() {
   return {
     version: VERSION,
     jugador: estadoInicialJugador(),
     misiones: misionesIniciales(),
+    puerta: null,
     dia: estadoInicialDia(),
+    castigo: estadoInicialCastigo(),
+    inventario: inventarioInicial(),
+    efectos: estadoInicialEfectos(),
     historial: [],
     ajustes: estadoInicialAjustes(),
   };
 }
 
-/** Devuelve siempre un estado válido, rellenando lo que falte con los valores por defecto. */
+/**
+ * Devuelve siempre un estado válido, rellenando lo que falte con los valores
+ * por defecto. Así una partida guardada por una versión anterior se completa
+ * sola con las features nuevas.
+ */
 export function normalizar(datos) {
   if (!datos || typeof datos !== 'object') return estadoInicial();
 
@@ -38,7 +50,11 @@ export function normalizar(datos) {
     version: VERSION,
     jugador: normalizarJugador(datos.jugador),
     misiones,
+    puerta: normalizarPuerta(datos.puerta),
     dia: normalizarDia(datos.dia),
+    castigo: normalizarCastigo(datos.castigo),
+    inventario: normalizarInventario(datos.inventario),
+    efectos: normalizarEfectos(datos.efectos),
     historial: normalizarHistorial(datos.historial),
     ajustes: normalizarAjustes(datos.ajustes),
   };

@@ -180,12 +180,12 @@ p { margin: 0; }
 
 /* ------------------------------ pestañas ------------------------------ */
 
-.pestanas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 14px; }
+.pestanas { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 14px; }
 .pestana {
   padding: 10px 4px;
   font: inherit;
-  font-size: 0.72rem;
-  letter-spacing: 0.14em;
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
   color: var(--tenue);
   background: rgba(9, 20, 38, 0.5);
   border: 1px solid var(--borde);
@@ -425,4 +425,170 @@ p { margin: 0; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}
+
+
+/* ==========================================================================
+   Ventana de estado ampliada, castigo, puertas, tienda y títulos
+   ========================================================================== */
+
+.ventana__titulo {
+  font-size: 0.58rem;
+  letter-spacing: 0.32em;
+  color: var(--cian);
+  text-align: center;
+  margin-bottom: 12px;
+  opacity: 0.85;
+}
+.ventana__titulo-equipado { font-size: 0.68rem; color: var(--dorado); letter-spacing: 0.08em; }
+
+.clase {
+  margin-left: auto;
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  color: var(--cian);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  padding: 3px 8px;
+}
+
+/* --------------------------------- vitales --------------------------------- */
+
+.vitales { display: grid; gap: 5px; margin-top: 10px; }
+.vital { display: grid; grid-template-columns: 28px 1fr auto; align-items: center; gap: 8px; }
+.vital__etiqueta { font-size: 0.56rem; letter-spacing: 0.12em; color: var(--tenue); }
+.vital__valor { font-size: 0.62rem; color: var(--tenue); min-width: 7ch; text-align: right; }
+.vital .barra { height: 10px; }
+.barra--hp .barra__relleno { background: linear-gradient(90deg, #7a1f2b, var(--rojo)); box-shadow: 0 0 10px rgba(255, 95, 109, 0.35); }
+.barra--mp .barra__relleno { background: linear-gradient(90deg, #1f4f8a, #6aa6ff); box-shadow: 0 0 10px rgba(106, 166, 255, 0.35); }
+.barra--fatiga .barra__relleno { background: linear-gradient(90deg, #8a6a1f, var(--dorado)); box-shadow: 0 0 10px rgba(255, 212, 121, 0.3); }
+
+/* -------------------------------- castigo -------------------------------- */
+
+.castigo {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  font-size: 0.72rem;
+  color: #ffd8db;
+  background: rgba(255, 95, 109, 0.12);
+  border: 1px solid rgba(255, 95, 109, 0.55);
+  border-radius: var(--radio);
+  box-shadow: 0 0 24px rgba(255, 95, 109, 0.18);
+  animation: pulso 2.4s ease-in-out infinite;
+}
+.castigo strong { color: var(--rojo); letter-spacing: 0.16em; font-size: 0.68rem; }
+
+body.en-castigo { background-color: #0d0406; }
+body.en-castigo .rejilla {
+  background-image:
+    linear-gradient(rgba(255, 95, 109, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 95, 109, 0.06) 1px, transparent 1px);
+}
+
+@keyframes pulso {
+  0%, 100% { box-shadow: 0 0 24px rgba(255, 95, 109, 0.18); }
+  50% { box-shadow: 0 0 34px rgba(255, 95, 109, 0.4); }
+}
+
+.subtitulo {
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  color: var(--tenue);
+  text-transform: uppercase;
+  margin: -4px 0 10px;
+}
+
+/* --------------------------------- puerta --------------------------------- */
+
+.puerta {
+  border: 1px solid rgba(95, 211, 255, 0.5);
+  border-radius: var(--radio);
+  background: linear-gradient(180deg, rgba(31, 111, 168, 0.18), rgba(4, 12, 24, 0.5));
+  padding: 12px;
+  box-shadow: inset 0 0 30px rgba(95, 211, 255, 0.12);
+}
+.puerta__cabecera { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.puerta__cabecera h3 { font-size: 0.86rem; color: var(--cian-claro); }
+.puerta__sello {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--cian-claro);
+  border: 1px solid var(--borde-fuerte);
+  border-radius: 50%;
+  flex-shrink: 0;
+  text-shadow: var(--brillo);
+}
+.puerta__recompensa { display: flex; gap: 12px; font-size: 0.66rem; color: var(--tenue); margin-top: 8px; }
+.puerta__recompensa .xp { color: var(--dorado); }
+.puerta__recompensa .oro { color: #ffcf5c; }
+.puerta--cerrada { border-color: rgba(69, 224, 160, 0.5); background: rgba(20, 60, 48, 0.25); }
+
+/* --------------------------------- tienda --------------------------------- */
+
+.objetos { display: grid; gap: 8px; }
+.objeto {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  background: rgba(4, 12, 24, 0.4);
+}
+.objeto__icono { font-size: 1.3rem; }
+.objeto__nombre { display: block; font-size: 0.8rem; color: var(--texto); }
+.objeto__desc { display: block; font-size: 0.66rem; color: var(--tenue); margin-top: 2px; }
+.objeto__precio { color: #ffcf5c; font-size: 0.68rem; }
+.objeto .boton { padding: 8px 10px; }
+.objeto__cantidad {
+  font-size: 0.7rem;
+  color: var(--cian-claro);
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+
+/* --------------------------- títulos y clases --------------------------- */
+
+.titulos, .clases { display: grid; gap: 8px; }
+.titulo-item, .clase-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  background: rgba(4, 12, 24, 0.4);
+  text-align: left;
+  font: inherit;
+  color: var(--texto);
+  cursor: pointer;
+}
+.titulo-item[disabled], .clase-item[disabled] { opacity: 0.45; cursor: not-allowed; }
+.titulo-item--activo { border-color: rgba(255, 212, 121, 0.6); background: rgba(255, 212, 121, 0.08); }
+.titulo-item strong, .clase-item strong { display: block; font-size: 0.8rem; font-weight: 600; }
+.titulo-item small, .clase-item small { display: block; font-size: 0.64rem; color: var(--tenue); margin-top: 2px; }
+.titulo-item__bono { color: var(--dorado); font-size: 0.68rem; white-space: nowrap; }
+
+/* ------------------------- efecto máquina de escribir ------------------------- */
+
+.escribiendo::after {
+  content: '▌';
+  margin-left: 1px;
+  color: var(--cian);
+  animation: parpadeo 0.8s steps(2) infinite;
+}
+@keyframes parpadeo { 50% { opacity: 0; } }
+
+@media (min-width: 760px) {
+  .objetos { grid-template-columns: repeat(2, 1fr); }
+  .titulos { grid-template-columns: repeat(2, 1fr); }
 }

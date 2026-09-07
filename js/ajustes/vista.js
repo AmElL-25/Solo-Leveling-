@@ -8,6 +8,7 @@ const $ = (selector) => document.querySelector(selector);
 
 export const elAjustes = {
   sonido: $('#ajuste-sonido'),
+  animaciones: $('#ajuste-animaciones'),
   btnExportar: $('#btn-exportar'),
   btnImportar: $('#btn-importar'),
   archivoImportar: $('#archivo-importar'),
@@ -16,4 +17,5 @@ export const elAjustes = {
 
 export function renderAjustes(ajustes) {
   elAjustes.sonido.checked = ajustes.sonido;
+  elAjustes.animaciones.checked = ajustes.animaciones;
 }

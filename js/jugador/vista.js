@@ -1,11 +1,16 @@
 /* ==========================================================================
    Feature: progresión del jugador — pintado de la ventana de estado
-   (nombre, rango, nivel, barra de XP, racha) y del reparto de estadísticas.
+   (nombre, rango, nivel, experiencia, vida, maná, fatiga, poder de combate)
+   y del reparto de estadísticas.
    ========================================================================== */
 
-import { STATS, xpNecesaria, rango } from './reglas.js';
+import {
+  STATS, xpNecesaria, rango, vidaMaxima, manaMaximo, vidaActual, manaActual, poderCombate,
+} from './reglas.js';
 
 const $ = (selector) => document.querySelector(selector);
+
+const porcentaje = (actual, maximo) => (maximo > 0 ? Math.min(100, (actual / maximo) * 100) : 0);
 
 export const elJugador = {
   nombre: $('#nombre-jugador'),
@@ -14,10 +19,16 @@ export const elJugador = {
   nivel: $('#nivel'),
   xpBarra: $('#xp-barra'),
   xpTexto: $('#xp-texto'),
+  hpBarra: $('#hp-barra'),
+  hpTexto: $('#hp-texto'),
+  mpBarra: $('#mp-barra'),
+  mpTexto: $('#mp-texto'),
+  fatigaBarra: $('#fatiga-barra'),
+  fatigaTexto: $('#fatiga-texto'),
+  poder: $('#poder'),
   racha: $('#racha'),
-  mejorRacha: $('#mejor-racha'),
   dias: $('#dias'),
-  puntos: $('#puntos'),
+  oro: $('#oro'),
   stats: $('#lista-stats'),
   insigniaPuntos: $('#insignia-puntos'),
   avisoPuntos: $('#aviso-puntos'),
@@ -31,10 +42,24 @@ export function renderVentanaEstado(jugador) {
   elJugador.nivel.textContent = jugador.nivel;
   elJugador.xpBarra.style.width = `${Math.min(100, (jugador.xp / necesaria) * 100)}%`;
   elJugador.xpTexto.textContent = `${jugador.xp} / ${necesaria} XP`;
+
+  const hp = vidaActual(jugador);
+  const hpMax = vidaMaxima(jugador);
+  elJugador.hpBarra.style.width = `${porcentaje(hp, hpMax)}%`;
+  elJugador.hpTexto.textContent = `${hp}/${hpMax}`;
+
+  const mp = manaActual(jugador);
+  const mpMax = manaMaximo(jugador);
+  elJugador.mpBarra.style.width = `${porcentaje(mp, mpMax)}%`;
+  elJugador.mpTexto.textContent = `${mp}/${mpMax}`;
+
+  elJugador.fatigaBarra.style.width = `${jugador.fatiga}%`;
+  elJugador.fatigaTexto.textContent = `${jugador.fatiga}`;
+
+  elJugador.poder.textContent = poderCombate(jugador);
   elJugador.racha.textContent = jugador.racha;
-  elJugador.mejorRacha.textContent = jugador.mejorRacha;
   elJugador.dias.textContent = jugador.diasCompletados;
-  elJugador.puntos.textContent = jugador.puntosLibres;
+  elJugador.oro.textContent = jugador.oro;
 }
 
 export function renderStats(jugador) {

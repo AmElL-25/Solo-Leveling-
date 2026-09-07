@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>El Sistema — Misiones Diarias</title>
-<meta name="description" content="Registro diario de misiones con progresión de jugador: experiencia, niveles, rangos y estadísticas.">
+<meta name="description" content="Registro diario de misiones con progresión de jugador: experiencia, niveles, rangos, estadísticas, puertas y penalizaciones.">
 <meta name="theme-color" content="#04070f">
 <meta name="color-scheme" content="dark">
 <link rel="manifest" href="manifest.webmanifest">
@@ -25,7 +25,7 @@
 <body>
 <div class="rejilla" aria-hidden="true"></div>
 
-<div class="marco">
+<div class="marco" id="marco">
 
   <header class="cabecera">
     <div class="cabecera__marca">
@@ -41,19 +41,31 @@
     </div>
   </header>
 
+  <!-- Aviso permanente mientras dura la penalización -->
+  <div class="castigo" id="banda-castigo" hidden>
+    <strong>⚠ ZONA DE PENALIZACIÓN</strong>
+    <span id="castigo-texto">Fallaste la misión diaria. Ganas la mitad de experiencia hasta que cumplas un día completo.</span>
+  </div>
+
   <!-- Ventana de estado: siempre visible, sobre las pestañas -->
-  <section class="ventana" aria-label="Estado del jugador">
+  <section class="ventana" aria-label="Ventana de estado">
+    <p class="ventana__titulo">VENTANA DE ESTADO</p>
+
     <div class="ventana__fila">
-      <p class="ventana__nombre">
-        <span id="nombre-jugador">Jugador</span>
-        <button id="btn-nombre" class="icono" type="button" title="Cambiar nombre" aria-label="Cambiar nombre">&#9998;</button>
-      </p>
+      <div>
+        <p class="ventana__nombre">
+          <span id="nombre-jugador">Jugador</span>
+          <button id="btn-nombre" class="icono" type="button" title="Cambiar nombre" aria-label="Cambiar nombre">&#9998;</button>
+        </p>
+        <p class="ventana__titulo-equipado" id="titulo-equipado">Sin título</p>
+      </div>
       <p class="rango" id="rango" title="Rango"><small>RANGO</small>E</p>
     </div>
 
     <div class="ventana__nivel">
       <span class="etiqueta">NIVEL</span>
       <span class="nivel" id="nivel">1</span>
+      <span class="clase" id="clase">Sin clase</span>
     </div>
 
     <div class="barra barra--xp">
@@ -61,26 +73,47 @@
       <span class="barra__texto" id="xp-texto">0 / 100 XP</span>
     </div>
 
+    <div class="vitales">
+      <div class="vital">
+        <span class="vital__etiqueta">HP</span>
+        <div class="barra barra--hp"><div class="barra__relleno" id="hp-barra"></div></div>
+        <span class="vital__valor" id="hp-texto">0/0</span>
+      </div>
+      <div class="vital">
+        <span class="vital__etiqueta">MP</span>
+        <div class="barra barra--mp"><div class="barra__relleno" id="mp-barra"></div></div>
+        <span class="vital__valor" id="mp-texto">0/0</span>
+      </div>
+      <div class="vital">
+        <span class="vital__etiqueta">FAT</span>
+        <div class="barra barra--fatiga"><div class="barra__relleno" id="fatiga-barra"></div></div>
+        <span class="vital__valor" id="fatiga-texto">0</span>
+      </div>
+    </div>
+
     <ul class="metricas">
+      <li><strong id="poder">0</strong><small>poder</small></li>
       <li><strong id="racha">0</strong><small>racha</small></li>
-      <li><strong id="mejor-racha">0</strong><small>récord</small></li>
       <li><strong id="dias">0</strong><small>días</small></li>
-      <li><strong id="puntos">0</strong><small>puntos</small></li>
+      <li><strong id="oro">0</strong><small>oro</small></li>
     </ul>
   </section>
 
   <nav class="pestanas" role="tablist" aria-label="Secciones">
     <button class="pestana" role="tab" data-tab="mision" aria-selected="true" aria-controls="tab-mision">MISIÓN</button>
     <button class="pestana" role="tab" data-tab="estado" aria-selected="false" aria-controls="tab-estado">ESTADO</button>
+    <button class="pestana" role="tab" data-tab="tienda" aria-selected="false" aria-controls="tab-tienda">TIENDA</button>
     <button class="pestana" role="tab" data-tab="ajustes" aria-selected="false" aria-controls="tab-ajustes">AJUSTES</button>
   </nav>
 
   <main>
+    <!-- ------------------------------ MISIÓN ------------------------------ -->
     <section class="panel" id="tab-mision" role="tabpanel" aria-label="Misión diaria">
       <div class="panel__cabecera">
         <h2>MISIÓN DIARIA</h2>
         <span class="insignia" id="dia-porcentaje">0%</span>
       </div>
+      <p class="subtitulo">Preparación para convertirse en un guerrero</p>
       <p class="alerta" id="aviso-diaria">Completa todas las misiones antes de medianoche o serás penalizado.</p>
 
       <div class="misiones" id="lista-misiones"></div>
@@ -89,8 +122,16 @@
         <button class="boton boton--primario" id="btn-completar" type="button" disabled>RECLAMAR RECOMPENSA</button>
         <button class="boton" id="btn-nueva" type="button">＋ NUEVA MISIÓN</button>
       </div>
+
+      <!-- Puerta del día -->
+      <div class="panel__cabecera panel__cabecera--separada">
+        <h2>PUERTA</h2>
+        <span class="insignia" id="puerta-rango" hidden>RANGO E</span>
+      </div>
+      <div id="puerta"></div>
     </section>
 
+    <!-- ------------------------------ ESTADO ------------------------------ -->
     <section class="panel" id="tab-estado" role="tabpanel" aria-label="Estado y estadísticas" hidden>
       <div class="panel__cabecera">
         <h2>ESTADÍSTICAS</h2>
@@ -98,6 +139,16 @@
       </div>
       <p class="tenue" id="aviso-puntos">Sube de nivel para conseguir puntos que repartir.</p>
       <div class="stats" id="lista-stats"></div>
+
+      <div class="panel__cabecera panel__cabecera--separada">
+        <h2>CLASE</h2>
+      </div>
+      <div id="bloque-clase"></div>
+
+      <div class="panel__cabecera panel__cabecera--separada">
+        <h2>TÍTULOS</h2>
+      </div>
+      <div class="titulos" id="lista-titulos"></div>
 
       <div class="panel__cabecera panel__cabecera--separada">
         <h2>HISTORIAL</h2>
@@ -110,12 +161,32 @@
       </p>
     </section>
 
+    <!-- ------------------------------ TIENDA ------------------------------ -->
+    <section class="panel" id="tab-tienda" role="tabpanel" aria-label="Tienda" hidden>
+      <div class="panel__cabecera">
+        <h2>TIENDA DEL SISTEMA</h2>
+        <span class="insignia" id="oro-tienda">0 oro</span>
+      </div>
+      <p class="tenue">El oro se gana completando misiones diarias y cerrando puertas.</p>
+      <div class="objetos" id="lista-tienda"></div>
+
+      <div class="panel__cabecera panel__cabecera--separada">
+        <h2>INVENTARIO</h2>
+      </div>
+      <div class="objetos" id="lista-inventario"></div>
+    </section>
+
+    <!-- ------------------------------ AJUSTES ------------------------------ -->
     <section class="panel" id="tab-ajustes" role="tabpanel" aria-label="Ajustes" hidden>
       <h2>AJUSTES</h2>
 
       <label class="opcion">
         <input type="checkbox" id="ajuste-sonido">
         <span>Sonido del Sistema</span>
+      </label>
+      <label class="opcion">
+        <input type="checkbox" id="ajuste-animaciones">
+        <span>Texto con efecto de escritura</span>
       </label>
 
       <div class="panel__cabecera panel__cabecera--separada"><h2>DATOS</h2></div>
@@ -175,6 +246,16 @@
       <button class="boton" value="cancelar" type="button" id="btn-cancelar-mision">CANCELAR</button>
     </div>
   </form>
+</dialog>
+
+<!-- Elección de clase -->
+<dialog id="dlg-clase" class="dialogo">
+  <h2>CAMBIO DE CLASE</h2>
+  <p class="tenue">Solo se elige una vez. Tu clase da un 15 % extra de experiencia en las misiones de su especialidad.</p>
+  <div class="clases" id="lista-clases"></div>
+  <div class="acciones">
+    <button class="boton" type="button" id="btn-cancelar-clase">DECIDIR MÁS TARDE</button>
+  </div>
 </dialog>
 
 <!-- Ventana de notificación del Sistema -->

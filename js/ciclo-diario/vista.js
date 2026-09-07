@@ -1,6 +1,6 @@
 /* ==========================================================================
-   Feature: ciclo diario — el reloj hasta medianoche y el aviso de la
-   misión diaria (progreso y botón de reclamar recompensa).
+   Feature: ciclo diario — el reloj hasta medianoche, el aviso de la misión
+   diaria y la banda de la zona de penalización.
    ========================================================================== */
 
 import { msHastaMedianoche } from '../nucleo/fecha.js';
@@ -13,6 +13,8 @@ export const elCicloDiario = {
   reloj: $('#reloj'),
   avisoDiaria: $('#aviso-diaria'),
   btnCompletar: $('#btn-completar'),
+  bandaCastigo: $('#banda-castigo'),
+  castigoTexto: $('#castigo-texto'),
 };
 
 export function renderReloj() {
@@ -30,13 +32,25 @@ export function renderAvisoDiario(estado) {
   elCicloDiario.btnCompletar.textContent = reclamado ? 'MISIÓN DIARIA COMPLETADA' : 'RECLAMAR RECOMPENSA';
   elCicloDiario.btnCompletar.classList.toggle('boton--hecho', reclamado);
 
-  const { total } = recompensaDia(estado.misiones);
+  const { total, oro } = recompensaDia(estado);
   elCicloDiario.avisoDiaria.classList.toggle('alerta--ok', reclamado || completo);
   if (reclamado) {
-    elCicloDiario.avisoDiaria.textContent = `Recompensa reclamada: +${estado.dia.xpGanada} XP. Vuelve mañana, jugador.`;
+    elCicloDiario.avisoDiaria.textContent =
+      `Recompensa reclamada: +${estado.dia.xpGanada} XP. Vuelve mañana, jugador.`;
   } else if (completo) {
-    elCicloDiario.avisoDiaria.textContent = `Objetivos cumplidos. Reclama tus ${total} XP antes de medianoche.`;
+    elCicloDiario.avisoDiaria.textContent =
+      `Objetivos cumplidos. Reclama tus ${total} XP y ${oro} de oro antes de medianoche.`;
   } else {
-    elCicloDiario.avisoDiaria.textContent = 'Completa todas las misiones antes de medianoche o serás penalizado.';
+    elCicloDiario.avisoDiaria.textContent =
+      'ADVERTENCIA: si no completas la misión diaria recibirás el castigo correspondiente.';
+  }
+}
+
+export function renderCastigo(castigo) {
+  elCicloDiario.bandaCastigo.hidden = !castigo.activo;
+  document.body.classList.toggle('en-castigo', castigo.activo);
+  if (castigo.activo) {
+    elCicloDiario.castigoTexto.textContent =
+      'Fallaste la misión diaria. Ganas la mitad de experiencia hasta que completes un día entero.';
   }
 }

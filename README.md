@@ -12,15 +12,29 @@ funciona sin conexión y todo tu progreso se guarda en tu propio dispositivo.
 1. **Misión diaria.** Arranca con el set clásico: 100 flexiones, 100 abdominales,
    100 sentadillas y 10 km de carrera. Puedes añadir, editar o borrar las tuyas
    (ejercicio, estudio, hábitos… lo que quieras).
-2. **Progreso.** Cada misión suma con los botones `−` / `+`, o escribiendo la cifra.
-   Las misiones sencillas se marcan como hechas de un toque.
-3. **Recompensa.** Al completar los objetivos del día se habilita `RECLAMAR RECOMPENSA`:
-   la experiencia de cada misión **+50 % de bonificación** y **+1 punto de estadística**.
-4. **Nivel y rango.** Cada nivel da 3 puntos para repartir entre Fuerza, Agilidad,
+2. **Recompensa.** Al completar los objetivos del día se habilita `RECLAMAR RECOMPENSA`:
+   la experiencia de cada misión **+50 % de bonificación**, **oro** y **+1 punto de
+   estadística**.
+3. **Nivel y rango.** Cada nivel da 3 puntos para repartir entre Fuerza, Agilidad,
    Vitalidad, Inteligencia y Percepción. El rango sube solo: **E → D → C → B → A → S**.
-5. **Penalización.** Si a medianoche la misión no está completa, se rompe la racha y
-   pierdes el 10 % de la experiencia del nivel actual, con aviso de *Zona de Penalización*.
-   Nunca bajas de nivel: el progreso conseguido no se pierde.
+4. **Ventana de estado.** La vida sale de Vitalidad y el maná de Inteligencia; la fatiga
+   sube al completar objetivos y se va al dormir. El **poder de combate** resume
+   estadísticas, nivel, clase y título en un solo número.
+5. **Penalización.** Si a medianoche la misión no está completa entras en la **zona de
+   penalización**: se rompe la racha, pierdes el 10 % de la experiencia del nivel y una
+   parte de la vida, y **ganas la mitad de experiencia** hasta que completes un día
+   entero. Nunca bajas de nivel.
+6. **Puertas.** Casi la mitad de los días se abre una puerta de rango E a S con un
+   desafío extra. Es opcional y no penaliza, pero paga experiencia y oro, y se cierra
+   sola a medianoche.
+7. **Títulos.** Se desbloquean por logros (primera misión, racha de 7, salir de una
+   penalización, cerrar 10 puertas, niveles altos…) y el que equipes da experiencia extra.
+8. **Cambio de clase.** Al nivel 10 el Sistema te ofrece especializarte: Guerrero,
+   Asesino, Tanque, Mago o Explorador. Da +15 % de experiencia en las misiones de tu
+   estadística y 3 puntos en ella. Se elige una sola vez.
+9. **Tienda.** Con el oro compras pociones de vida y energía, piedras de doble
+   experiencia, llaves para invocar puertas y el pergamino del perdón, que anula una
+   penalización y te devuelve la racha.
 
 ## Cómo usarla
 
@@ -109,12 +123,17 @@ js/app.js                      Raíz de composición: arranque, eventos, tempori
 js/progreso.js                 Partida guardada: agrega el estado de cada feature y lo
                                 persiste en localStorage
 
-js/jugador/                    Nivel, experiencia, rango y estadísticas
+js/jugador/                    Nivel, experiencia, rango, estadísticas, vida y fatiga
 js/misiones/                   Alta, edición, borrado y progreso de las misiones
 js/ciclo-diario/                Recompensa, racha, cambio de día y penalización
+js/puertas/                    Desafíos extra de rango E a S y su recompensa
+js/titulos/                    Títulos desbloqueables y el que llevas equipado
+js/clases/                     Cambio de clase y su especialidad
+js/tienda/                     Objetos, compra con oro e inventario
+js/recompensas/                Multiplicador de experiencia (título, clase, castigo)
 js/historial/                  Mapa de calor de los últimos 30 días
-js/ajustes/                    Sonido, copia de seguridad y reinicio
-js/notificaciones/             Ventanas emergentes del Sistema y el pitido
+js/ajustes/                    Sonido, texto animado, copia de seguridad y reinicio
+js/notificaciones/             Ventanas del Sistema, máquina de escribir y sonidos
 
 js/nucleo/                     Utilidades técnicas sin reglas de juego:
                                 fecha.js (fechas, id, reloj) y
@@ -134,9 +153,11 @@ Para pasar la prueba automática, con el servidor local en marcha:
 npm install playwright && node pruebas/e2e.mjs
 ```
 
-Los números del juego están todos arriba de `js/ciclo-diario/reglas.js` (`BONO_DIA`,
-`PENALIZACION_XP`), `js/jugador/reglas.js` (`PUNTOS_POR_NIVEL` y la curva `xpNecesaria`),
-por si quieres afinar la dificultad.
+Los números del juego están arriba de cada `reglas.js`: `js/ciclo-diario/` (`BONO_DIA`,
+`PENALIZACION_XP`, `PENALIZACION_HP`), `js/jugador/` (`PUNTOS_POR_NIVEL`, `FATIGA_MISION`
+y la curva `xpNecesaria`) y `js/recompensas/` (`MERMA_CASTIGO`, `ORO_POR_XP`). Los
+catálogos de títulos, clases, objetos y puertas viven en el `catalogo.js` de su feature:
+se pueden afinar sin tocar la interfaz.
 
 > Proyecto personal y sin ánimo de lucro, inspirado en la estética de las novelas de
 > progresión. No está asociado a ninguna obra ni a sus autores.

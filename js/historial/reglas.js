@@ -3,6 +3,8 @@
    para pintar el mapa de calor de los últimos 30 días.
    ========================================================================== */
 
+import { normalizarIndicadores } from '../negocio/reglas.js';
+
 export const MAX_HISTORIAL = 60;
 
 function num(valor, porDefecto, minimo = -Infinity) {
@@ -21,6 +23,7 @@ export function normalizarEntradaHistorial(entrada) {
     porcentaje: Math.min(100, entero(entrada.porcentaje, 0, 0)),
     completado: Boolean(entrada.completado),
     xpGanada: entero(entrada.xpGanada, 0, 0),
+    indicadores: normalizarIndicadores(entrada.indicadores),
   };
 }
 

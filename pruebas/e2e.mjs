@@ -2,8 +2,8 @@
    Levanta antes un servidor local (python3 -m http.server 8000) y ejecuta:
      npm install playwright && node pruebas/e2e.mjs
    Recorre el ciclo completo: misión diaria, fatiga, jefe semanal, recompensa,
-   títulos, puertas, tienda, clase, castigo con aceptación y bloqueo de la
-   semana, plantillas y persistencia. */
+   títulos, puertas, tienda, clase, castigo con bloqueo de la semana,
+   plantillas, indicadores de negocio, cuadro de mando, cuota y modo sobrio. */
 
 import { chromium } from 'playwright';
 
@@ -54,8 +54,11 @@ const fijar = async (nombre, valor) => {
   await campo.fill(String(valor));
   await campo.dispatchEvent('change');
 };
-const completarTodo = async () => {
-  for (const tarjeta of await page.locator('.mision').all()) {
+const completarTodo = async (incluirOpcionales = false) => {
+  const tarjetas = incluirOpcionales
+    ? await page.locator('.mision').all()
+    : await page.locator('.mision:not(.mision--opcional)').all();
+  for (const tarjeta of tarjetas) {
     const campo = tarjeta.locator('input[data-accion="fijar"]');
     if (await campo.count()) { await campo.fill('9999'); await campo.dispatchEvent('change'); }
     else await tarjeta.locator('[data-accion="alternar"]').click();
@@ -72,7 +75,9 @@ comprobar('la misión diaria se anuncia', await titulo() === 'HA LLEGADO LA MISI
 await aceptar();
 
 comprobar('el set inicial es el de gerente de ventas y físico',
-  await page.locator('.mision').count() === 9);
+  await page.locator('.mision').count() === 12);
+comprobar('trae misiones de resultado opcionales',
+  await page.locator('.mision--opcional').count() === 2);
 comprobar('trae misiones de trabajo', await mision('Prospección').count() === 1);
 comprobar('trae misiones de físico', await mision('Entrenamiento de fuerza').count() === 1);
 comprobar('ventana de estado con vida', /^\d+\/\d+$/.test(await page.locator('#hp-texto').textContent()));
@@ -86,7 +91,7 @@ comprobar('el botón de recompensa empieza deshabilitado', await page.locator('#
 
 const inicial = await leerEstado();
 comprobar('aparece un jefe al empezar la semana', Boolean(inicial.jefe));
-comprobar('la vida del jefe se escala con el poder', inicial.jefe.vidaMaxima === 2720,
+comprobar('la vida del jefe sale de las misiones obligatorias', inicial.jefe.vidaMaxima === 3060,
   `(${inicial.jefe?.vidaMaxima})`);
 comprobar('la tarjeta del jefe se pinta', await page.locator('.jefe').count() === 1);
 
@@ -108,7 +113,8 @@ comprobar('deshacerlo devuelve la fatiga',
 /* --------------------------- 3. recompensa del día --------------------------- */
 
 await completarTodo();
-comprobar('el día llega al 100 %', await page.locator('#dia-porcentaje').textContent() === '100%');
+comprobar('las opcionales no bloquean el día',
+  await page.locator('#dia-porcentaje').textContent() === '100%');
 comprobar('se habilita reclamar', !(await page.locator('#btn-completar').isDisabled()));
 
 await page.click('#btn-completar');
@@ -284,6 +290,78 @@ comprobar('la casilla se marca como hecha',
 page.once('dialog', (d) => d.accept());
 await sencilla.locator('[data-accion="borrar"]').click();
 comprobar('se borra la misión', await page.locator('.mision').count() === 5);
+
+/* ---------------------- 13. indicadores y cuadro de mando ---------------------- */
+
+await page.evaluate(() => localStorage.clear());
+await page.reload();
+await page.waitForSelector('.mision');
+await aceptar();
+
+await fijar('Prospección', 20);
+await fijar('Propuestas enviadas', 9999);   // el progreso se limita al objetivo: 3
+await page.click('.pestana[data-tab="cuadro"]');
+const kpis = await page.locator('.kpi').allTextContents();
+comprobar('el cuadro muestra los contactos de hoy',
+  kpis.some((t) => t.includes('Contactos') && t.includes('20')));
+comprobar('el cuadro muestra las propuestas',
+  kpis.some((t) => t.includes('Propuestas') && t.includes('3')));
+comprobar('sin cierres todavía no hay conversión',
+  (await page.locator('#cuadro-mes').textContent()).includes('sin propuestas') === false);
+
+// Un cierre da conversión y hace el doble de daño que la actividad
+const vidaAntes = (await leerEstado()).jefe.vida;
+await page.click('.pestana[data-tab="mision"]');
+await fijar('Ventas cerradas', 1);
+const danoCierre = vidaAntes - (await leerEstado()).jefe.vida;
+comprobar('la venta cerrada pega el doble que la actividad',
+  Math.abs(danoCierre - golpeMision * (80 / 40) * 2) <= 2,
+  `(${danoCierre} de daño)`);
+
+await page.click('.pestana[data-tab="cuadro"]');
+comprobar('la conversión aparece al haber cierres (1 de 3)',
+  (await page.locator('#cuadro-mes').textContent()).includes('33.3 %'));
+
+/* ------------------------------- 14. cuota ------------------------------- */
+
+await page.click('.pestana[data-tab="ajustes"]');
+await page.fill('#ajuste-cuota', '5000');
+await page.locator('#ajuste-cuota').dispatchEvent('change');
+await aceptar();
+await page.click('.pestana[data-tab="mision"]');
+await fijar('Facturación', 4500);   // por encima del objetivo diario: es un registro
+comprobar('una misión opcional admite más que su objetivo',
+  (await leerEstado()).misiones.find((m) => m.nombre === 'Facturación').progreso === 4500);
+await page.click('.pestana[data-tab="cuadro"]');
+comprobar('la cuota guarda el objetivo', (await leerEstado()).cuota.objetivo === 5000);
+comprobar('la cuota avanza con la facturación',
+  (await page.locator('#cuadro-cuota').textContent()).includes('90 %'));
+
+/* ------------------- 15. el historial guarda las cifras ------------------- */
+
+await escribirEstado({ dia: { fecha: '2000-01-01', completado: true, xpGanada: 0, avisado: true } });
+await page.reload();
+await page.waitForSelector('.mision');
+await aceptar();
+const archivado = (await leerEstado()).historial[0];
+comprobar('el día archivado guarda los contactos', archivado.indicadores.contactos === 20);
+comprobar('el día archivado guarda la facturación', archivado.indicadores.ingresos === 4500);
+
+/* ---------------------------- 16. modo sobrio ---------------------------- */
+
+await page.click('.pestana[data-tab="ajustes"]');
+await page.check('#ajuste-sobrio');
+await aceptar();
+comprobar('el modo sobrio cambia el tema',
+  await page.locator('body').getAttribute('data-tema') === 'sobrio');
+comprobar('el modo sobrio cambia el nombre de la cabecera',
+  await page.locator('#titulo-app').textContent() === 'PANEL');
+comprobar('el modo sobrio se guarda', (await leerEstado()).ajustes.tema === 'sobrio');
+await page.uncheck('#ajuste-sobrio');
+await aceptar();
+comprobar('se puede volver al Sistema',
+  await page.locator('#titulo-app').textContent() === 'EL SISTEMA');
+
 
 console.log(ok.join('\n'));
 if (fallos.length) console.log('\n' + fallos.join('\n'));

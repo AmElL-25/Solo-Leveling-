@@ -50,8 +50,13 @@ import {
 import { comprar, usar, buscarObjeto } from './tienda/reglas.js';
 import { elTienda, renderTienda } from './tienda/vista.js';
 
+import { renderCuadro } from './negocio/vista.js';
+import { normalizarCuota } from './negocio/reglas.js';
+
 import { renderHistorial } from './historial/vista.js';
 import { elAjustes, renderAjustes } from './ajustes/vista.js';
+import { sonidoActivo, textoAnimado } from './ajustes/reglas.js';
+import { aplicarTema } from './ajustes/tema.js';
 
 let estado = cargar();
 
@@ -66,8 +71,10 @@ function render() {
   renderTitulos(estado.jugador);
   renderClase(estado.jugador);
   renderTienda(estado);
+  renderCuadro(estado);
   renderHistorial(estado);
-  renderAjustes(estado.ajustes);
+  renderAjustes(estado);
+  aplicarTema(estado.ajustes);
 }
 
 function actualizar() {
@@ -76,7 +83,7 @@ function actualizar() {
 }
 
 function pitido(tipo) {
-  sonar(tipo, estado.ajustes.sonido);
+  sonar(tipo, sonidoActivo(estado.ajustes));
 }
 
 /* ------------------------- avisos compartidos ------------------------- */
@@ -601,9 +608,29 @@ elAjustes.sonido.addEventListener('change', () => {
 
 elAjustes.animaciones.addEventListener('change', () => {
   estado.ajustes.animaciones = elAjustes.animaciones.checked;
-  configurarAnimaciones(estado.ajustes.animaciones);
+  configurarAnimaciones(textoAnimado(estado.ajustes));
   guardar(estado);
 });
+
+elAjustes.sobrio.addEventListener('change', () => {
+  estado.ajustes.tema = elAjustes.sobrio.checked ? 'sobrio' : 'sistema';
+  configurarAnimaciones(textoAnimado(estado.ajustes));
+  actualizar();
+  pitido('guardar');
+});
+
+/* La cuota se guarda mientras se escribe: no hay botón que se pueda olvidar. */
+for (const campo of [elAjustes.cuotaObjetivo, elAjustes.cuotaMoneda]) {
+  campo.addEventListener('change', () => {
+    estado.cuota = normalizarCuota({
+      ...estado.cuota,
+      objetivo: Number(elAjustes.cuotaObjetivo.value) || 0,
+      moneda: elAjustes.cuotaMoneda.value.trim() || estado.cuota.moneda,
+    });
+    pitido('guardar');
+    actualizar();
+  });
+}
 
 elAjustes.btnExportar.addEventListener('click', () => {
   const blob = new Blob([exportar(estado)], { type: 'application/json' });
@@ -623,7 +650,7 @@ elAjustes.archivoImportar.addEventListener('change', async (evento) => {
     estado = importar(await archivo.text());
     comprobarDia();
     revisarSemana(estado);
-    configurarAnimaciones(estado.ajustes.animaciones);
+    configurarAnimaciones(textoAnimado(estado.ajustes));
     actualizar();
     notificar({ titulo: 'DATOS RESTAURADOS', lineas: [{ texto: 'Tu progreso ha vuelto al Sistema.' }] });
   } catch {
@@ -678,7 +705,7 @@ document.addEventListener('visibilitychange', () => {
 document.addEventListener('pointerdown', despertarSonido, { once: true });
 document.addEventListener('keydown', despertarSonido, { once: true });
 
-configurarAnimaciones(estado.ajustes.animaciones);
+configurarAnimaciones(textoAnimado(estado.ajustes));
 const resumenInicial = comprobarDia();
 avisarTitulos(revisarTitulos(estado));
 avisarMisionDiaria();

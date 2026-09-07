@@ -16,6 +16,7 @@ import {
   inventarioInicial, normalizarInventario, estadoInicialEfectos, normalizarEfectos,
 } from './tienda/reglas.js';
 import { normalizarHistorial } from './historial/reglas.js';
+import { estadoInicialCuota, normalizarCuota } from './negocio/reglas.js';
 import { estadoInicialAjustes, normalizarAjustes } from './ajustes/reglas.js';
 
 export const CLAVE = 'sistema:v1';   // el hueco de almacenamiento no cambia de nombre
@@ -32,6 +33,7 @@ export function estadoInicial() {
     castigo: estadoInicialCastigo(),
     inventario: inventarioInicial(),
     efectos: estadoInicialEfectos(),
+    cuota: estadoInicialCuota(),
     historial: [],
     ajustes: estadoInicialAjustes(),
   };
@@ -59,6 +61,7 @@ export function normalizar(datos) {
     castigo: normalizarCastigo(datos.castigo),
     inventario: normalizarInventario(datos.inventario),
     efectos: normalizarEfectos(datos.efectos),
+    cuota: normalizarCuota(datos.cuota),
     historial: normalizarHistorial(datos.historial),
     ajustes: normalizarAjustes(datos.ajustes),
   };

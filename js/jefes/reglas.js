@@ -8,6 +8,8 @@ import { fechaHoy, idNuevo, lunesDeLaSemana } from '../nucleo/fecha.js';
 import { poderCombate, otorgarXp } from '../jugador/reglas.js';
 import { revisarTitulos } from '../titulos/reglas.js';
 import { castigoPendiente } from '../castigo/reglas.js';
+import { obligatorias } from '../misiones/reglas.js';
+import { esResultado, MULTIPLICADOR_RESULTADO } from '../negocio/catalogo.js';
 import {
   NOMBRES_JEFE, RANGOS_JEFE, VIDA_POR_XP_DIARIA, GOLPE_PUERTA,
   RECOMPENSA_XP, RECOMPENSA_ORO,
@@ -45,7 +47,7 @@ function rangoParaNivel(nivel) {
  * mismo para todos: unos seis días de constancia.
  */
 export function vidaDelJefe(misiones, jugador) {
-  const xpDiaria = misiones.reduce((total, m) => total + m.xp, 0);
+  const xpDiaria = obligatorias(misiones).reduce((total, m) => total + m.xp, 0);
   // El daño diario crece con el poder de combate, así que la vida crece igual:
   // el jefe siempre cuesta unos seis días, al nivel 1 y al 60.
   const escala = 1 + poderCombate(jugador) / 1500;
@@ -87,9 +89,15 @@ export function revisarSemana(estado, hoy = fechaHoy(), aleatorio = Math.random)
   return { huido, nuevo: estado.jefe, bloqueado: false };
 }
 
-/** Golpe por cumplir un objetivo: la experiencia de la misión, escalada por el poder. */
+/**
+ * Golpe por cumplir un objetivo: la experiencia de la misión escalada por el
+ * poder. Cerrar una venta o facturar cuenta el doble: al jefe le duele el
+ * resultado, no la actividad.
+ */
 export function danoPorMision(jugador, mision) {
-  return Math.max(1, Math.round(mision.xp * (1 + poderCombate(jugador) / 1500)));
+  const base = mision.xp * (1 + poderCombate(jugador) / 1500);
+  const factor = esResultado(mision.indicador) ? MULTIPLICADOR_RESULTADO : 1;
+  return Math.max(1, Math.round(base * factor));
 }
 
 /**

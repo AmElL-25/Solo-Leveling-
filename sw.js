@@ -1,7 +1,7 @@
 /* Service worker: guarda la app en caché para que funcione sin conexión.
    Sube CACHE al cambiar cualquier archivo para forzar la actualización. */
 
-const CACHE = 'sistema-v9';
+const CACHE = 'sistema-v10';
 
 const ARCHIVOS = [
   './',
@@ -43,6 +43,10 @@ const ARCHIVOS = [
   './js/historial/reglas.js',
   './js/historial/vista.js',
   './js/ajustes/reglas.js',
+  './js/ajustes/tema.js',
+  './js/negocio/catalogo.js',
+  './js/negocio/reglas.js',
+  './js/negocio/vista.js',
   './js/ajustes/vista.js',
   './manifest.webmanifest',
   './iconos/icono.svg',

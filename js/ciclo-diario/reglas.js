@@ -7,13 +7,14 @@
 
 import { fechaHoy, diasEntre } from '../nucleo/fecha.js';
 import { otorgarXp, xpNecesaria, vidaMaxima, vidaActual } from '../jugador/reglas.js';
-import { diaCompleto, porcentajeDia } from '../misiones/reglas.js';
+import { diaCompleto, porcentajeDia, misionCompleta } from '../misiones/reglas.js';
 import { registrarDia } from '../historial/reglas.js';
 import { multiplicadorXp, oroPorXp } from '../recompensas/reglas.js';
 import { revisarTitulos } from '../titulos/reglas.js';
 import { generarPuerta, hayPuertaHoy } from '../puertas/reglas.js';
 import { revisarSemana } from '../jefes/reglas.js';
 import { asignarCastigo } from '../castigo/reglas.js';
+import { indicadoresDelDia } from '../negocio/reglas.js';
 
 export const BONO_DIA = 0.5;         // +50 % de experiencia por completar la misión entera
 export const PENALIZACION_XP = 0.10; // se pierde el 10 % de la experiencia del nivel actual
@@ -46,7 +47,9 @@ export function normalizarDia(dia) {
 
 /** Lo que pagará hoy la misión diaria, ya con título, clase, castigo y objetos aplicados. */
 export function recompensaDia(estado) {
-  const base = estado.misiones.reduce(
+  // Las opcionales solo pagan si se cumplieron.
+  const cobrables = estado.misiones.filter((m) => !m.opcional || misionCompleta(m));
+  const base = cobrables.reduce(
     (total, m) => total + m.xp * multiplicadorXp(estado, m.stat), 0,
   );
   const total = Math.round(base * (1 + BONO_DIA));
@@ -126,6 +129,7 @@ export function sincronizarDia(estado, hoy = fechaHoy(), aleatorio = Math.random
     porcentaje,
     completado: anterior.completado,
     xpGanada: anterior.xpGanada,
+    indicadores: indicadoresDelDia(estado.misiones),
   });
 
   if (!anterior.completado) {

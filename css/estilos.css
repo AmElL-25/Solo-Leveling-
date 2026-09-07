@@ -230,12 +230,12 @@ p { margin: 0; }
 
 /* ------------------------------ pestañas ------------------------------ */
 
-.pestanas { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 14px; }
+.pestanas { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-bottom: 14px; }
 .pestana {
-  padding: 10px 4px;
+  padding: 10px 2px;
   font: inherit;
-  font-size: 0.66rem;
-  letter-spacing: 0.1em;
+  font-size: 0.58rem;
+  letter-spacing: 0.06em;
   color: var(--tenue);
   background: rgba(9, 20, 38, 0.5);
   border: 1px solid var(--borde);
@@ -741,3 +741,86 @@ body.en-castigo .rejilla {
 }
 
 .vacio--peligro { color: #ffb9be; border-color: rgba(255, 95, 109, 0.45); }
+
+
+/* ============================== cuadro de mando ============================== */
+
+.kpis { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.kpi {
+  padding: 10px 12px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  background: rgba(4, 12, 24, 0.4);
+}
+.kpi__nombre { font-size: 0.62rem; letter-spacing: 0.12em; color: var(--tenue); text-transform: uppercase; }
+.kpi__valor { font-size: 1.4rem; font-weight: 700; color: var(--cian-claro); line-height: 1.2; margin: 2px 0; }
+.kpi__pie { font-size: 0.6rem; color: var(--tenue); }
+.kpi__var { display: inline-block; margin-top: 6px; font-size: 0.62rem; letter-spacing: 0.04em; color: var(--tenue); }
+.kpi__var--sube { color: var(--verde); }
+.kpi__var--baja { color: var(--rojo); }
+.kpi__var--nueva { opacity: 0.7; }
+
+.barra--cuota { height: 24px; }
+.barra--cuota .barra__relleno { background: linear-gradient(90deg, #8a6a1f, var(--dorado)); box-shadow: 0 0 16px rgba(255, 212, 121, 0.4); }
+
+.etiqueta-mision {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 1px 6px;
+  font-size: 0.56rem;
+  letter-spacing: 0.08em;
+  color: var(--tenue);
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+}
+.etiqueta-mision--negocio { color: var(--dorado); border-color: rgba(255, 212, 121, 0.4); }
+.mision--opcional { border-style: dashed; }
+.opcion--dialogo { font-size: 0.7rem; color: var(--tenue); margin-bottom: 12px; }
+
+/* ================================ modo sobrio ================================ */
+/* Misma estructura, otra ropa: paleta apagada, sin resplandores ni adornos. */
+
+body[data-tema="sobrio"] {
+  --fondo: #10151b;
+  --panel: rgba(30, 38, 48, 0.92);
+  --panel-solido: #1b232d;
+  --cian: #7fa8c9;
+  --cian-claro: #d7e4ee;
+  --borde: rgba(160, 180, 200, 0.24);
+  --borde-fuerte: rgba(160, 180, 200, 0.45);
+  --texto: #dce4ec;
+  --tenue: #93a3b3;
+  --rojo: #d97070;
+  --verde: #6bbf8a;
+  --dorado: #d7b26a;
+  --brillo: none;
+  background: var(--fondo);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  letter-spacing: 0;
+}
+body[data-tema="sobrio"] .rejilla,
+body[data-tema="sobrio"] .cabecera__glifo { display: none; }
+body[data-tema="sobrio"] .ventana,
+body[data-tema="sobrio"] .panel,
+body[data-tema="sobrio"] .notificacion__panel {
+  clip-path: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  backdrop-filter: none;
+}
+body[data-tema="sobrio"] h1,
+body[data-tema="sobrio"] .ventana__titulo,
+body[data-tema="sobrio"] .nivel,
+body[data-tema="sobrio"] .notificacion__ventana h2 { text-shadow: none; }
+body[data-tema="sobrio"] .ventana__titulo { font-size: 1rem; letter-spacing: 0.12em; }
+body[data-tema="sobrio"] .ventana__titulo::before,
+body[data-tema="sobrio"] .regla::after { display: none; }
+body[data-tema="sobrio"] .barra__relleno,
+body[data-tema="sobrio"] .notificacion__barra,
+body[data-tema="sobrio"] .notificacion__icono { box-shadow: none; }
+body[data-tema="sobrio"] .notificacion__barra { height: 2px; background: var(--borde-fuerte); }
+body[data-tema="sobrio"] .notificacion__barra::before,
+body[data-tema="sobrio"] .notificacion__barra::after { display: none; }
+body[data-tema="sobrio"] .notificacion__panel { background: var(--panel-solido); }
+body[data-tema="sobrio"] .castigo { animation: none; box-shadow: none; }
+body[data-tema="sobrio"] .pestana[aria-selected="true"] { box-shadow: none; background: rgba(160, 180, 200, 0.14); }
+body[data-tema="sobrio"] .escribiendo::after { display: none; }

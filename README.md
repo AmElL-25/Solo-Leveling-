@@ -45,6 +45,28 @@ funciona sin conexión y todo tu progreso se guarda en tu propio dispositivo.
     experiencia, llaves para invocar puertas y el pergamino del perdón, que anula la
     penalización y te devuelve la racha.
 
+## La capa de negocio
+
+El juego mide esfuerzo; esta capa mide resultados.
+
+- **Indicadores.** Cada misión puede declarar a qué aporta: contactos, reuniones,
+  propuestas, ventas cerradas o facturación. Las que no lo hacen (fuerza, cardio, sueño)
+  cuentan solo para el juego.
+- **Misiones opcionales.** Cerrar una venta no depende solo de ti, así que *Ventas
+  cerradas* y *Facturación* son de registro: dan experiencia y golpean al jefe, pero no
+  bloquean el día ni se cortan en su objetivo — si facturas de más, se anota de más.
+- **Cuadro de mando** (pestaña CUADRO): totales de la semana por indicador, media diaria,
+  variación frente a la semana anterior, tasa de conversión (cierres ÷ propuestas) y el
+  acumulado del mes.
+- **Cuota mensual.** Fija tu objetivo en AJUSTES y la barra te dice el porcentaje y cuánto
+  falta. Se calcula del historial, no de un contador que pueda desincronizarse.
+- **El jefe mide lo comercial.** Conserva su nombre y su barra, pero las misiones de
+  resultado le pegan **el doble**: al jefe le duele la venta, no la actividad.
+- **Modo sobrio.** Un interruptor en AJUSTES cambia la app a aspecto de oficina —paleta
+  apagada, sin resplandores, tipografía del sistema y *PANEL* en la cabecera— y silencia
+  sonido y animación de texto mientras está activo, sin tocar tus preferencias. Los datos
+  y las reglas son los mismos.
+
 ## Cómo usarla
 
 **En el ordenador**, desde la carpeta del proyecto:
@@ -151,6 +173,7 @@ js/puertas/                    Desafíos extra de rango E a S y su recompensa
 js/jefes/                      Jefe semanal: aparición, daño, victoria y huida
 js/castigo/                    Misión de castigo: asignación, aceptación y deuda
 js/plantillas/                 Sets de misión diaria para distintas vidas
+js/negocio/                    Indicadores, cuadro de mando y cuota
 js/sonido/                     Sintetizador de los avisos del Sistema
 js/titulos/                    Títulos desbloqueables y el que llevas equipado
 js/clases/                     Cambio de clase y su especialidad

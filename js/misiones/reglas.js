@@ -7,6 +7,7 @@
 import { idNuevo } from '../nucleo/fecha.js';
 import { STATS } from '../jugador/reglas.js';
 import { buscarPlantilla, PLANTILLA_INICIAL } from '../plantillas/catalogo.js';
+import { esIndicador } from '../negocio/catalogo.js';
 
 /** Convierte una plantilla del catálogo en misiones listas para jugar. */
 export function misionesDePlantilla(id) {
@@ -20,6 +21,8 @@ export function misionesDePlantilla(id) {
     nombre: m.nombre,
     xp: m.xp,
     stat: m.stat,
+    indicador: m.indicador ?? null,
+    opcional: Boolean(m.opcional),
   }));
 }
 
@@ -57,9 +60,13 @@ export function normalizarMision(mision) {
     objetivo,
     unidad: tipo === 'checkbox' ? '' : String(mision.unidad ?? '').trim().slice(0, 10),
     paso: tipo === 'checkbox' ? 1 : Math.max(0.5, dec(mision.paso, 1, 0.5)),
-    progreso: Math.min(objetivo, dec(mision.progreso, 0, 0)),
+    progreso: mision.opcional
+      ? dec(mision.progreso, 0, 0)
+      : Math.min(objetivo, dec(mision.progreso, 0, 0)),
     xp: Math.min(999, Math.max(1, entero(mision.xp, 20, 1))),
     stat: STATS.some((s) => s.id === mision.stat) ? mision.stat : 'fuerza',
+    indicador: esIndicador(mision.indicador) ? mision.indicador : null,
+    opcional: Boolean(mision.opcional),
   };
 }
 
@@ -72,15 +79,24 @@ export function progresoMision(mision) {
   return Math.min(1, mision.progreso / mision.objetivo);
 }
 
-/** Progreso medio del día, de 0 a 1. */
+/**
+ * Las misiones opcionales —cerrar una venta, facturar— no dependen solo de ti:
+ * cuentan para la experiencia y para los indicadores, pero no deciden si el día
+ * está cumplido.
+ */
+export const obligatorias = (misiones) => misiones.filter((m) => !m.opcional);
+
+/** Progreso medio del día, de 0 a 1. Solo cuentan las misiones obligatorias. */
 export function porcentajeDia(misiones) {
-  if (!misiones.length) return 0;
-  const suma = misiones.reduce((total, m) => total + progresoMision(m), 0);
-  return suma / misiones.length;
+  const cuentan = obligatorias(misiones);
+  if (!cuentan.length) return 0;
+  const suma = cuentan.reduce((total, m) => total + progresoMision(m), 0);
+  return suma / cuentan.length;
 }
 
 export function diaCompleto(misiones) {
-  return misiones.length > 0 && misiones.every(misionCompleta);
+  const cuentan = obligatorias(misiones);
+  return cuentan.length > 0 && cuentan.every(misionCompleta);
 }
 
 export function ajustarProgreso(misiones, id, delta) {
@@ -92,7 +108,9 @@ export function ajustarProgreso(misiones, id, delta) {
 export function fijarProgreso(misiones, id, valor) {
   const mision = misiones.find((m) => m.id === id);
   if (!mision) return false;
-  const limitado = Math.min(mision.objetivo, Math.max(0, Math.round(valor * 100) / 100));
+  // Las opcionales son registro, no objetivo: si facturas de más, se anota de más.
+  const tope = mision.opcional ? Infinity : mision.objetivo;
+  const limitado = Math.min(tope, Math.max(0, Math.round(valor * 100) / 100));
   if (limitado === mision.progreso) return false;
   mision.progreso = limitado;
   return true;

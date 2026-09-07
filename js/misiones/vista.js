@@ -5,6 +5,7 @@
    ========================================================================== */
 
 import { STATS } from '../jugador/reglas.js';
+import { INDICADORES, buscarIndicador } from '../negocio/catalogo.js';
 import { misionCompleta, progresoMision, porcentajeDia } from './reglas.js';
 
 const $ = (selector) => document.querySelector(selector);
@@ -36,6 +37,7 @@ export function renderMisiones(misiones) {
 
 function tarjetaMision(mision) {
   const completa = misionCompleta(mision);
+  const indicador = buscarIndicador(mision.indicador);
   const ancho = progresoMision(mision) * 100;
   const unidad = mision.unidad ? ` ${escapar(mision.unidad)}` : '';
 
@@ -45,12 +47,13 @@ function tarjetaMision(mision) {
        </button>`
     : `<button class="boton" data-accion="menos" type="button" aria-label="Restar">−</button>
        <input class="paso" data-accion="fijar" type="number" inputmode="decimal" min="0"
-              max="${mision.objetivo}" step="${mision.paso}" value="${numero(mision.progreso)}"
+              ${mision.opcional ? '' : `max="${mision.objetivo}"`} step="${mision.paso}"
+              value="${numero(mision.progreso)}"
               aria-label="Progreso de ${escapar(mision.nombre)}">
        <button class="boton" data-accion="mas" type="button" aria-label="Sumar">+${numero(mision.paso)}</button>`;
 
   return `
-    <article class="mision ${completa ? 'mision--completa' : ''}" data-id="${escapar(mision.id)}">
+    <article class="mision ${completa ? 'mision--completa' : ''} ${mision.opcional ? 'mision--opcional' : ''}" data-id="${escapar(mision.id)}">
       <div class="mision__cabecera">
         <h3>${escapar(mision.nombre)}</h3>
         <div class="mision__acciones">
@@ -65,7 +68,11 @@ function tarjetaMision(mision) {
       <div class="mision__controles">${controles}</div>
       <div class="mision__pie">
         <span class="xp">+${mision.xp} XP</span>
-        <span>${escapar(nombreStat(mision.stat))}</span>
+        <span>
+          ${mision.opcional ? '<span class="etiqueta-mision">OPCIONAL</span>' : ''}
+          ${indicador ? `<span class="etiqueta-mision etiqueta-mision--negocio">${escapar(indicador.nombre)}</span>` : ''}
+          ${escapar(nombreStat(mision.stat))}
+        </span>
       </div>
     </article>`;
 }
@@ -82,9 +89,14 @@ const campos = {
   paso: $('#campo-paso'),
   xp: $('#campo-xp'),
   stat: $('#campo-stat'),
+  indicador: $('#campo-indicador'),
+  opcional: $('#campo-opcional'),
 };
 
 campos.stat.innerHTML = STATS.map((s) => `<option value="${s.id}">${s.nombre}</option>`).join('');
+campos.indicador.innerHTML = ['<option value="">Ninguno (solo juego)</option>']
+  .concat(INDICADORES.map((i) => `<option value="${i.id}">${i.nombre}</option>`))
+  .join('');
 
 function alternarCamposContador() {
   $('#campos-contador').hidden = campos.tipo.value === 'checkbox';
@@ -101,6 +113,8 @@ export function abrirDialogoMision(mision = null) {
   campos.paso.value = mision?.paso ?? 10;
   campos.xp.value = mision?.xp ?? 40;
   campos.stat.value = mision?.stat ?? 'fuerza';
+  campos.indicador.value = mision?.indicador ?? '';
+  campos.opcional.checked = Boolean(mision?.opcional);
   alternarCamposContador();
   dlg.showModal();
 }
@@ -121,5 +135,7 @@ export function leerFormularioMision() {
     paso: esContador ? Math.max(0.5, Number(campos.paso.value) || 1) : 1,
     xp: Math.min(999, Math.max(1, Math.round(Number(campos.xp.value) || 20))),
     stat: campos.stat.value,
+    indicador: campos.indicador.value || null,
+    opcional: campos.opcional.checked,
   };
 }

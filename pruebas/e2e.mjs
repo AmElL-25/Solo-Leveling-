@@ -3,8 +3,8 @@
      npm install playwright && node pruebas/e2e.mjs
    Recorre el ciclo completo: misión diaria, fatiga, jefe semanal, recompensa,
    títulos, puertas, tienda, clase, castigo con bloqueo de la semana,
-   plantillas, indicadores de negocio, cuadro de mando, cuota y los dos modos
-   (SISTEMA y SALES) con su horario automático. */
+   plantillas, indicadores de negocio, cuadro de mando, cuota, los dos modos
+   (SISTEMA y SALES) y el apartado de configuración. */
 
 import { chromium } from 'playwright';
 
@@ -66,6 +66,14 @@ const completarTodo = async (incluirOpcionales = false) => {
   }
 };
 const hoy = () => new Date().toISOString().slice(0, 10);
+
+const abrirConfig = async () => { await page.click('#btn-configuracion'); await page.waitForTimeout(80); };
+const cerrarConfig = async (tab = 'mision') => {
+  await page.click('#btn-cerrar-config');
+  await page.waitForTimeout(80);
+  await page.click(`.pestana[data-tab="${tab}"]`);
+};
+const filaObjetivo = (nombre) => page.locator('.objetivo-fila', { hasText: nombre });
 
 /* ------------------------------- 1. arranque ------------------------------- */
 
@@ -265,7 +273,7 @@ comprobar('la sección de castigo se oculta', await page.locator('#seccion-casti
 
 /* ------------------------ 11. plantillas de misión ------------------------ */
 
-await page.click('.pestana[data-tab="ajustes"]');
+await abrirConfig();
 page.once('dialog', (d) => d.accept());
 await page.click('[data-plantilla="fisico"]');
 await aceptar();
@@ -277,19 +285,22 @@ comprobar('la plantilla persiste', await page.locator('.mision').count() === 5);
 
 /* ---------------------- 12. misiones propias y borrado ---------------------- */
 
-await page.click('.pestana[data-tab="mision"]');
+await abrirConfig();
 await page.click('#btn-nueva');
 await page.fill('#campo-nombre', 'Leer 20 páginas');
 await page.selectOption('#campo-tipo', 'checkbox');
 await page.selectOption('#campo-stat', 'inteligencia');
 await page.click('#form-mision button[value="guardar"]');
+await cerrarConfig();
 comprobar('se añade la misión', await page.locator('.mision').count() === 6);
 const sencilla = mision('Leer 20 páginas');
 await sencilla.locator('[data-accion="alternar"]').click();
 comprobar('la casilla se marca como hecha',
   (await sencilla.getAttribute('class')).includes('mision--completa'));
+await abrirConfig();
 page.once('dialog', (d) => d.accept());
-await sencilla.locator('[data-accion="borrar"]').click();
+await filaObjetivo('Leer 20 páginas').locator('[data-accion="borrar"]').click();
+await cerrarConfig();
 comprobar('se borra la misión', await page.locator('.mision').count() === 5);
 
 /* ---------------------- 13. indicadores y cuadro de mando ---------------------- */
@@ -325,11 +336,11 @@ comprobar('la conversión aparece al haber cierres (1 de 3)',
 
 /* ------------------------------- 14. cuota ------------------------------- */
 
-await page.click('.pestana[data-tab="ajustes"]');
+await abrirConfig();
 await page.fill('#ajuste-cuota', '5000');
 await page.locator('#ajuste-cuota').dispatchEvent('change');
 await aceptar();
-await page.click('.pestana[data-tab="mision"]');
+await cerrarConfig();
 await fijar('Facturación', 4500);   // por encima del objetivo diario: es un registro
 comprobar('una misión opcional admite más que su objetivo',
   (await leerEstado()).misiones.find((m) => m.nombre === 'Facturación').progreso === 4500);
@@ -429,6 +440,44 @@ const migrado = await page.evaluate(async () => {
   return normalizarAjustes({ sonido: true, animaciones: true, tema: 'sobrio' });
 });
 comprobar('el ajuste antiguo "sobrio" se migra a modo SALES', migrado.modo === 'sales');
+
+
+/* --------------------- 18. la configuración vive aparte --------------------- */
+
+comprobar('la barra tiene cuatro pestañas', await page.locator('.pestana').count() === 4);
+comprobar('ya no hay pestaña de ajustes',
+  await page.locator('.pestana[data-tab="ajustes"]').count() === 0);
+comprobar('la tarjeta del día no tiene lápiz',
+  await page.locator('.mision [data-accion="editar"]').count() === 0);
+comprobar('la tarjeta del día no tiene papelera',
+  await page.locator('.mision [data-accion="borrar"]').count() === 0);
+comprobar('la pantalla del día no tiene botón de crear',
+  await page.locator('#tab-mision #btn-nueva').count() === 0);
+comprobar('el apartado empieza cerrado', await page.locator('#configuracion').isHidden());
+
+await abrirConfig();
+comprobar('el engranaje abre la configuración', await page.locator('#configuracion').isVisible());
+comprobar('el apartado lista los objetivos', await page.locator('.objetivo-fila').count() > 0);
+comprobar('el apartado tiene los ajustes', await page.locator('#ajuste-sonido').isVisible());
+comprobar('el apartado tiene las plantillas', await page.locator('#lista-plantillas').isVisible());
+comprobar('el apartado tiene los datos', await page.locator('#btn-exportar').isVisible());
+
+// Editar desde el apartado cambia la pantalla del día
+await filaObjetivo('Cardio').locator('[data-accion="editar"]').click();
+await page.fill('#campo-nombre', 'Cardio matutino');
+await page.click('#form-mision button[value="guardar"]');
+comprobar('editar desde el apartado renombra el objetivo',
+  await filaObjetivo('Cardio matutino').count() === 1);
+await cerrarConfig();
+comprobar('el cambio se ve en la pantalla del día',
+  await mision('Cardio matutino').count() === 1);
+comprobar('el botón de volver cierra el apartado',
+  await page.locator('#configuracion').isHidden());
+
+await abrirConfig();
+await page.keyboard.press('Escape');
+await page.waitForTimeout(80);
+comprobar('la tecla Escape también cierra', await page.locator('#configuracion').isHidden());
 
 
 console.log(ok.join('\n'));

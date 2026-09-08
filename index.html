@@ -37,6 +37,8 @@
     </div>
     <div class="cabecera__lado">
       <button class="boton boton--modo" id="btn-modo" type="button">MODO SALES</button>
+      <button class="icono icono--engranaje" id="btn-configuracion" type="button"
+              title="Configuración" aria-label="Abrir configuración">&#9881;</button>
       <div class="cabecera__reloj">
         <strong id="reloj">--:--</strong>
         <small>para medianoche</small>
@@ -99,7 +101,6 @@
     <button class="pestana" role="tab" data-tab="estado" aria-selected="false" aria-controls="tab-estado" data-t="tabEstado">ESTADO</button>
     <button class="pestana" role="tab" data-tab="cuadro" aria-selected="false" aria-controls="tab-cuadro" data-t="tabCuadro">CUADRO</button>
     <button class="pestana" role="tab" data-tab="tienda" aria-selected="false" aria-controls="tab-tienda" data-t="tabTienda">TIENDA</button>
-    <button class="pestana" role="tab" data-tab="ajustes" aria-selected="false" aria-controls="tab-ajustes" data-t="tabAjustes">AJUSTES</button>
   </nav>
 
   <main>
@@ -126,7 +127,6 @@
 
       <div class="acciones">
         <button class="boton boton--primario" id="btn-completar" type="button" disabled>RECLAMAR RECOMPENSA</button>
-        <button class="boton" id="btn-nueva" type="button" data-t="nuevaMision">＋ NUEVA MISIÓN</button>
       </div>
 
       <!-- Jefe de la semana -->
@@ -208,10 +208,33 @@
       <div class="objetos" id="lista-inventario"></div>
     </section>
 
-    <!-- ------------------------------ AJUSTES ------------------------------ -->
-    <section class="panel" id="tab-ajustes" role="tabpanel" aria-label="Ajustes" hidden>
-      <h2 data-t="ajustes">AJUSTES</h2>
+  </main>
+</div>
 
+<!-- Configuración: fuera de la pantalla del día, se abre con el engranaje -->
+<div class="configuracion" id="configuracion" role="dialog" aria-modal="true" aria-labelledby="config-titulo" hidden>
+  <header class="configuracion__cabecera">
+    <h2 id="config-titulo" data-t="configuracion">CONFIGURACIÓN</h2>
+    <button class="boton" id="btn-cerrar-config" type="button" data-t="volver">VOLVER</button>
+  </header>
+
+  <div class="configuracion__cuerpo">
+    <div class="panel">
+      <div class="panel__cabecera">
+        <h2 data-t="objetivosLista">MISIONES DIARIAS</h2>
+        <button class="boton" id="btn-nueva" type="button" data-t="nuevaMision">＋ NUEVA MISIÓN</button>
+      </div>
+      <p class="tenue">Aquí se crean, se editan y se borran. La pantalla del día solo sirve para marcar.</p>
+      <div class="objetivos-lista" id="lista-objetivos"></div>
+
+      <div class="panel__cabecera panel__cabecera--separada"><h2 data-t="misionesAjustes">PLANTILLAS</h2></div>
+      <p class="tenue">Elige el set que se ajuste a tu vida. Sustituye las misiones actuales,
+        incluidas las que hayas creado tú.</p>
+      <div class="titulos" id="lista-plantillas"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel__cabecera"><h2>SONIDO Y TEXTO</h2></div>
       <label class="opcion">
         <input type="checkbox" id="ajuste-sonido">
         <span data-t="ajusteSonido">Sonido del Sistema</span>
@@ -249,11 +272,6 @@
         </label>
       </div>
 
-      <div class="panel__cabecera panel__cabecera--separada"><h2 data-t="misionesAjustes">MISIONES DIARIAS</h2></div>
-      <p class="tenue">Elige el set que se ajuste a tu vida. Sustituye las misiones actuales,
-        incluidas las que hayas creado tú.</p>
-      <div class="titulos" id="lista-plantillas"></div>
-
       <div class="panel__cabecera panel__cabecera--separada"><h2>DATOS</h2></div>
       <p class="tenue">Tu progreso se guarda solo en este dispositivo. Descarga una copia de vez en cuando para no perderlo.</p>
       <div class="acciones acciones--columna">
@@ -264,8 +282,8 @@
       <input type="file" id="archivo-importar" accept="application/json,.json" hidden>
 
       <p class="tenue leyenda">Proyecto personal inspirado en la estética de las novelas de progresión. Sin conexión, sin cuentas, sin anuncios.</p>
-    </section>
-  </main>
+    </div>
+  </div>
 </div>
 
 <!-- Alta y edición de misiones -->

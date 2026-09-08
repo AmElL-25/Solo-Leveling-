@@ -11,9 +11,8 @@ funciona sin conexión y todo tu progreso se guarda en tu propio dispositivo.
 
 1. **Misión diaria.** Arranca con el set de **gerente de ventas + físico**: prospección,
    reunión con el equipo, uno a uno con un vendedor, propuestas, formación, fuerza,
-   cardio, agua y sueño. En **AJUSTES → MISIONES DIARIAS** puedes cambiar a otro set
-   (solo trabajo, solo físico o el clásico del Sistema), y toda misión se edita, se
-   añade o se borra a mano.
+   cardio, agua y sueño. La pantalla del día **solo sirve para marcar**: crear, editar,
+   borrar y cambiar de set se hace en **⚙ Configuración**.
 2. **Recompensa.** Al completar los objetivos del día se habilita `RECLAMAR RECOMPENSA`:
    la experiencia de cada misión **+50 % de bonificación**, **oro** y **+1 punto de
    estadística**.
@@ -45,6 +44,16 @@ funciona sin conexión y todo tu progreso se guarda en tu propio dispositivo.
     experiencia, llaves para invocar puertas y el pergamino del perdón, que anula la
     penalización y te devuelve la racha.
 
+## Dónde está cada cosa
+
+La pantalla principal es para el día: marcar progreso, ver el jefe y la puerta. Cuatro
+pestañas y nada más.
+
+Todo lo que se toca de vez en cuando vive detrás del **engranaje de la cabecera**, en un
+apartado a pantalla completa: crear, editar y borrar objetivos, las plantillas, la cuota,
+el modo automático y su horario, el sonido y las copias de seguridad. Se cierra con
+**VOLVER** o con la tecla Escape.
+
 ## La capa de negocio
 
 El juego mide esfuerzo; esta capa mide resultados.
@@ -58,8 +67,8 @@ El juego mide esfuerzo; esta capa mide resultados.
 - **Cuadro de mando** (pestaña CUADRO): totales de la semana por indicador, media diaria,
   variación frente a la semana anterior, tasa de conversión (cierres ÷ propuestas) y el
   acumulado del mes.
-- **Cuota mensual.** Fija tu objetivo en AJUSTES y la barra te dice el porcentaje y cuánto
-  falta. Se calcula del historial, no de un contador que pueda desincronizarse.
+- **Cuota mensual.** Fija tu objetivo en ⚙ Configuración y la barra te dice el porcentaje y
+  cuánto falta. Se calcula del historial, no de un contador que pueda desincronizarse.
 - **El jefe mide lo comercial.** Conserva su nombre y su barra, pero las misiones de
   resultado le pegan **el doble**: al jefe le duele la venta, no la actividad.
 ## Dos modos: SISTEMA y SALES
@@ -77,7 +86,7 @@ ve.
 **Cómo cambia de modo:**
 
 - **A mano**: el botón de la cabecera (`MODO SALES` / `MODO SISTEMA`) alterna al instante.
-- **Solo**: en AJUSTES puedes activar un horario laboral (días y franja). Dentro de él la
+- **Solo**: en ⚙ Configuración puedes activar un horario laboral (días y franja). Dentro de él la
   app se pone en SALES; fuera, vuelve a SISTEMA. El botón manda hasta el siguiente tramo:
   si fuerzas SISTEMA a media mañana, aguanta hasta que acabe tu jornada.
 
@@ -192,6 +201,7 @@ js/castigo/                    Misión de castigo: asignación, aceptación y de
 js/plantillas/                 Sets de misión diaria para distintas vidas
 js/negocio/                    Indicadores, cuadro de mando y cuota
 js/modo/                       Los dos modos: diccionario, horario e interruptor
+js/configuracion/              El apartado del engranaje: objetivos y ajustes
 js/sonido/                     Sintetizador de los avisos del Sistema
 js/titulos/                    Títulos desbloqueables y el que llevas equipado
 js/clases/                     Cambio de clase y su especialidad

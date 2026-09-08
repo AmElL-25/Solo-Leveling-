@@ -58,10 +58,6 @@ function tarjetaMision(mision) {
     <article class="mision ${completa ? 'mision--completa' : ''} ${mision.opcional ? 'mision--opcional' : ''}" data-id="${escapar(mision.id)}">
       <div class="mision__cabecera">
         <h3>${escapar(mision.nombre)}</h3>
-        <div class="mision__acciones">
-          <button class="icono" data-accion="editar" type="button" title="Editar" aria-label="Editar misión">&#9998;</button>
-          <button class="icono" data-accion="borrar" type="button" title="Borrar" aria-label="Borrar misión">&#10005;</button>
-        </div>
       </div>
       <div class="barra barra--mision">
         <div class="barra__relleno" style="width:${ancho}%"></div>
@@ -77,6 +73,36 @@ function tarjetaMision(mision) {
         </span>
       </div>
     </article>`;
+}
+
+/** Lista editable del apartado de configuración: aquí sí hay editar y borrar. */
+export function renderListaObjetivos(misiones) {
+  const lista = $('#lista-objetivos');
+  if (!lista) return;
+
+  lista.innerHTML = misiones.length
+    ? misiones.map((mision) => {
+      const indicador = buscarIndicador(mision.indicador);
+      const meta = mision.tipo === 'checkbox'
+        ? 'hecho / no hecho'
+        : `${numero(mision.objetivo)} ${escapar(mision.unidad)}`;
+      return `
+        <div class="objetivo-fila" data-id="${escapar(mision.id)}">
+          <div class="objetivo-fila__texto">
+            <strong>${escapar(mision.nombre)}</strong>
+            <small>
+              ${meta} · +${mision.xp} XP · ${escapar(nombreStat(mision.stat))}
+              ${indicador ? ` · ${escapar(indicador.nombre)}` : ''}
+              ${mision.opcional ? ' · opcional' : ''}
+            </small>
+          </div>
+          <div class="objetivo-fila__acciones">
+            <button class="icono" data-accion="editar" type="button" title="Editar" aria-label="Editar ${escapar(mision.nombre)}">&#9998;</button>
+            <button class="icono" data-accion="borrar" type="button" title="Borrar" aria-label="Borrar ${escapar(mision.nombre)}">&#10005;</button>
+          </div>
+        </div>`;
+    }).join('')
+    : '<p class="vacio">Todavía no hay objetivos. Crea el primero.</p>';
 }
 
 /* --------------------------- diálogo de alta y edición --------------------------- */

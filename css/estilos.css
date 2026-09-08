@@ -84,17 +84,27 @@ p { margin: 0; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
   margin-bottom: 14px;
+  flex-wrap: wrap;
 }
-.cabecera__marca { display: flex; align-items: center; gap: 10px; }
+/* La marca cede espacio antes que los controles: el nombre puede partirse. */
+.cabecera__marca { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1 1 150px; }
+.cabecera__marca > div { min-width: 0; }
 .cabecera__glifo {
   font-size: 1.5rem;
   color: var(--cian);
   text-shadow: var(--brillo);
   animation: latido 3.6s ease-in-out infinite;
 }
-.cabecera__reloj { text-align: right; line-height: 1.15; }
+.cabecera__reloj { text-align: right; line-height: 1.15; flex-shrink: 0; }
+
+/* En pantallas muy estrechas el lema sobra y el reloj se queda solo con la hora. */
+@media (max-width: 359px) {
+  .cabecera__marca p { display: none; }
+  .cabecera__reloj small { display: none; }
+  .boton--modo { padding: 7px 8px; font-size: 0.52rem; }
+}
 .cabecera__reloj strong { display: block; color: var(--cian-claro); font-size: 1.05rem; }
 .cabecera__reloj small { color: var(--tenue); font-size: 0.62rem; letter-spacing: 0.08em; }
 
@@ -230,12 +240,12 @@ p { margin: 0; }
 
 /* ------------------------------ pestañas ------------------------------ */
 
-.pestanas { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-bottom: 14px; }
+.pestanas { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 14px; }
 .pestana {
   padding: 10px 2px;
   font: inherit;
-  font-size: 0.58rem;
-  letter-spacing: 0.06em;
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
   color: var(--tenue);
   background: rgba(9, 20, 38, 0.5);
   border: 1px solid var(--borde);
@@ -252,7 +262,8 @@ p { margin: 0; }
 
 /* ------------------------------ paneles ------------------------------ */
 
-.panel__cabecera { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.panel__cabecera { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+.panel__cabecera .boton { flex-shrink: 0; }
 .panel__cabecera--separada { margin-top: 26px; padding-top: 16px; border-top: 1px solid var(--borde); }
 
 .insignia {
@@ -421,8 +432,9 @@ p { margin: 0; }
   border-radius: var(--radio);
 }
 .dialogo input:focus, .dialogo select:focus { outline: none; border-color: var(--borde-fuerte); box-shadow: var(--brillo); }
-.fila-campos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.fila-campos:has(label:nth-child(2):last-child) { grid-template-columns: repeat(2, 1fr); }
+/* Los campos se reparten solos y nunca fuerzan más ancho del que hay. */
+.fila-campos { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; }
+.fila-campos label, .fila-campos input, .fila-campos select { min-width: 0; }
 
 /* ------------------------------ notificación ------------------------------ */
 
@@ -829,7 +841,7 @@ body[data-modo="sales"] .escribiendo::after { display: none; }
 
 /* --------------------------- interruptor de modo --------------------------- */
 
-.cabecera__lado { display: flex; align-items: center; gap: 10px; }
+.cabecera__lado { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .boton--modo {
   padding: 7px 10px;
   font-size: 0.56rem;
@@ -886,4 +898,65 @@ body[data-modo="sales"] .escribiendo::after { display: none; }
 }
 @keyframes salir-aviso {
   to { opacity: 0; transform: translateY(-8px); }
+}
+
+
+/* ============================== configuración ============================== */
+
+.icono--engranaje { font-size: 1.15rem; padding: 4px 8px; border-color: var(--borde); }
+
+.configuracion {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  background: var(--fondo);
+  overflow: hidden;
+}
+.configuracion__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: calc(14px + env(safe-area-inset-top)) 14px 14px;
+  border-bottom: 1px solid var(--borde);
+  background: var(--panel-solido);
+}
+.configuracion__cabecera h2 { font-size: 0.86rem; color: var(--cian-claro); }
+.configuracion__cuerpo {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  display: grid;
+  gap: 14px;
+  padding: 14px 14px calc(28px + env(safe-area-inset-bottom));
+  max-width: 960px;
+  width: 100%;
+  margin: 0 auto;
+}
+/* Sin esto, un hijo ancho (el botón de crear) estira la columna de la rejilla. */
+.configuracion__cuerpo > * { min-width: 0; }
+
+/* Con el apartado abierto, el fondo no se mueve. */
+body.sin-scroll { overflow: hidden; }
+
+.objetivos-lista { display: grid; gap: 6px; }
+.objetivo-fila {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 12px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  background: rgba(4, 12, 24, 0.4);
+}
+.objetivo-fila__texto { min-width: 0; }
+.objetivo-fila__texto strong { display: block; font-size: 0.8rem; font-weight: 600; color: var(--texto); }
+.objetivo-fila__texto small { display: block; font-size: 0.62rem; color: var(--tenue); margin-top: 2px; }
+.objetivo-fila__acciones { display: flex; gap: 2px; flex-shrink: 0; }
+
+@media (min-width: 760px) {
+  .configuracion__cuerpo { grid-template-columns: repeat(2, 1fr); align-items: start; }
 }

@@ -22,7 +22,9 @@ export const TERMINOS = {
   tabEstado:      { sistema: 'ESTADO', sales: 'FICHA' },
   tabCuadro:      { sistema: 'CUADRO', sales: 'CUADRO' },
   tabTienda:      { sistema: 'TIENDA', sales: 'CANJE' },
-  tabAjustes:     { sistema: 'AJUSTES', sales: 'AJUSTES' },
+  configuracion:  { sistema: 'CONFIGURACIÓN', sales: 'CONFIGURACIÓN' },
+  volver:         { sistema: 'VOLVER', sales: 'VOLVER' },
+  objetivosLista: { sistema: 'MISIONES DIARIAS', sales: 'OBJETIVOS DIARIOS' },
 
   /* ------------------------------- misión diaria ------------------------------- */
   misionDiaria:   { sistema: 'MISIÓN DIARIA', sales: 'OBJETIVOS DEL DÍA' },
@@ -125,7 +127,7 @@ export const TERMINOS = {
   /* ---------------------------------- ajustes ---------------------------------- */
   ajustes:        { sistema: 'AJUSTES', sales: 'AJUSTES' },
   ajusteSonido:   { sistema: 'Sonido del Sistema', sales: 'Sonido de avisos' },
-  misionesAjustes:{ sistema: 'MISIONES DIARIAS', sales: 'OBJETIVOS DIARIOS' },
+  misionesAjustes:{ sistema: 'PLANTILLAS', sales: 'PLANTILLAS' },
 };
 
 /** La palabra de una clave en el modo pedido. */

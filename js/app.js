@@ -18,8 +18,13 @@ import {
   ajustarProgreso, fijarProgreso, guardarMision, eliminarMision, misionCompleta,
 } from './misiones/reglas.js';
 import {
-  elMisiones, renderMisiones, abrirDialogoMision, cerrarDialogoMision, leerFormularioMision,
+  elMisiones, renderMisiones, renderListaObjetivos,
+  abrirDialogoMision, cerrarDialogoMision, leerFormularioMision,
 } from './misiones/vista.js';
+
+import {
+  elConfiguracion, abrirConfiguracion, cerrarConfiguracion, configuracionAbierta,
+} from './configuracion/vista.js';
 
 import { sincronizarDia, completarDia, recompensaDia } from './ciclo-diario/reglas.js';
 import { elCicloDiario, renderReloj, renderAvisoDiario } from './ciclo-diario/vista.js';
@@ -77,6 +82,7 @@ function render() {
   renderVentanaEstado(estado.jugador);
   renderStats(estado.jugador);
   renderMisiones(estado.misiones);
+  renderListaObjetivos(estado.misiones);
   renderAvisoDiario(estado);
   renderCastigo(estado.castigo);
   renderPuerta(estado.puerta);
@@ -325,18 +331,42 @@ elMisiones.lista.addEventListener('click', (evento) => {
     case 'alternar':
       resolverObjetivo(id, () => fijarProgreso(estado.misiones, id, mision.progreso >= 1 ? 0 : 1));
       break;
-    case 'editar':
-      abrirDialogoMision(mision);
-      return;
-    case 'borrar':
-      if (!confirm(`¿Eliminar la misión "${mision.nombre}"?`)) return;
-      eliminarMision(estado.misiones, id);
-      pitido('guardar');
-      break;
     default:
       return;
   }
   actualizar();
+});
+
+/* ---------------------------- configuración ---------------------------- */
+
+elConfiguracion.abrir.addEventListener('click', () => {
+  abrirConfiguracion();
+  pitido('guardar');
+});
+elConfiguracion.cerrar.addEventListener('click', cerrarConfiguracion);
+
+document.addEventListener('keydown', (evento) => {
+  if (evento.key === 'Escape' && configuracionAbierta()) cerrarConfiguracion();
+});
+
+// Crear, editar y borrar objetivos vive aquí, no en la pantalla del día.
+elConfiguracion.lista.addEventListener('click', (evento) => {
+  const boton = evento.target.closest('button[data-accion]');
+  if (!boton) return;
+  const id = boton.closest('[data-id]')?.dataset.id;
+  const mision = estado.misiones.find((m) => m.id === id);
+  if (!mision) return;
+
+  if (boton.dataset.accion === 'editar') {
+    abrirDialogoMision(mision);
+    return;
+  }
+  if (boton.dataset.accion === 'borrar') {
+    if (!confirm(`¿Eliminar "${mision.nombre}"?`)) return;
+    eliminarMision(estado.misiones, id);
+    pitido('guardar');
+    actualizar();
+  }
 });
 
 elMisiones.lista.addEventListener('change', (evento) => {

@@ -230,6 +230,14 @@ Para pasar la prueba automática, con el servidor local en marcha:
 npm install playwright && node pruebas/e2e.mjs
 ```
 
+Si Playwright se queja de que no encuentra el navegador (`Executable doesn't exist`),
+es que la versión instalada espera una compilación de Chromium que no está en la
+máquina. Instala la que corresponda al Chromium que ya tienes, o descárgalo:
+
+```bash
+npx playwright install chromium
+```
+
 Los números del juego están arriba de cada `reglas.js`: `js/ciclo-diario/` (`BONO_DIA`,
 `PENALIZACION_XP`, `PENALIZACION_HP`), `js/jugador/` (`PUNTOS_POR_NIVEL`, `FATIGA_MISION`
 y la curva `xpNecesaria`) y `js/recompensas/` (`MERMA_CASTIGO`, `ORO_POR_XP`). Los

@@ -479,6 +479,69 @@ await page.keyboard.press('Escape');
 await page.waitForTimeout(80);
 comprobar('la tecla Escape también cierra', await page.locator('#configuracion').isHidden());
 
+/* ------------------- 19. la ventana de penalización ------------------- */
+
+await page.evaluate(async () => {
+  const { notificar } = await import('/js/notificaciones/notificaciones.js');
+  notificar({
+    titulo: 'ZONA DE PENALIZACIÓN',
+    tipo: 'peligro',
+    boton: 'ACEPTO EL CASTIGO',
+    lineas: [
+      'Has fallado la misión del 2026-09-09 (0 % completado).',
+      { texto: '-55 HP', destacado: true },
+      'Ganarás la mitad de experiencia hasta que completes un día entero.',
+    ],
+  });
+});
+// 420 ms: hay que dejar terminar la animación de entrada (scale + translateY,
+// 0,32 s) o se mide la ventana encogida y a medio camino.
+await page.waitForTimeout(420);
+
+// Sale en el centro exacto de la pantalla
+const sitio = await page.evaluate(() => {
+  const c = document.querySelector('#noti-ventana').getBoundingClientRect();
+  return {
+    dx: Math.abs(c.x + c.width / 2 - innerWidth / 2),
+    dy: Math.abs(c.y + c.height / 2 - innerHeight / 2),
+    alto: Math.round(c.height),
+  };
+});
+comprobar('la ventana sale centrada en la pantalla', sitio.dx < 1 && sitio.dy < 1,
+  `desviación ${sitio.dx.toFixed(1)}×${sitio.dy.toFixed(1)}px`);
+
+// El texto de dentro también va centrado
+const centrado = await page.evaluate(() => {
+  const c = (sel) => getComputedStyle(document.querySelector(sel));
+  return {
+    titulo: c('#noti-titulo').textAlign,
+    cuerpo: c('#noti-cuerpo p').textAlign,
+    cabecera: c('.notificacion__cabecera').justifyContent,
+  };
+});
+comprobar('el título va centrado', centrado.titulo === 'center', centrado.titulo);
+comprobar('el cuerpo va centrado', centrado.cuerpo === 'center', centrado.cuerpo);
+comprobar('la cabecera va centrada', centrado.cabecera === 'center', centrado.cabecera);
+
+// El rojo de la penalización es rojo de verdad, no el salmón de antes
+const rojo = await page.evaluate(() => {
+  const leer = (sel, prop) => getComputedStyle(document.querySelector(sel))[prop]
+    .match(/\d+/g).slice(0, 3).map(Number);
+  return { marco: leer('.notificacion__panel', 'borderTopColor'), titulo: leer('#noti-titulo', 'color') };
+});
+const vivo = ([r, g, b]) => r > 200 && r - g > 120 && r - b > 100;
+comprobar('el marco de la penalización es rojo vivo', vivo(rojo.marco), rojo.marco.join(','));
+comprobar('el título de la penalización es rojo', vivo(rojo.titulo), rojo.titulo.join(','));
+
+// Con el texto centrado, la ventana no puede cambiar de tamaño mientras escribe
+const altoAlEmpezar = sitio.alto;
+await page.waitForTimeout(900);
+const altoAMedias = await page.evaluate(() =>
+  Math.round(document.querySelector('#noti-ventana').getBoundingClientRect().height));
+await aceptar();
+comprobar('la ventana no da saltos mientras se escribe', altoAlEmpezar === altoAMedias,
+  `${altoAlEmpezar}px → ${altoAMedias}px`);
+
 
 console.log(ok.join('\n'));
 if (fallos.length) console.log('\n' + fallos.join('\n'));

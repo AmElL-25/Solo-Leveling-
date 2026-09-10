@@ -90,19 +90,27 @@ function siguiente() {
     typeof linea === 'string' ? { texto: linea } : linea
   ));
 
-  // Los párrafos se crean vacíos y el texto entra después: así nunca se
-  // interpreta como HTML lo que escriba el jugador.
-  el.notiCuerpo.innerHTML = lineas
-    .map((linea) => `<p class="${linea.destacado ? 'destacado' : ''}"></p>`)
-    .join('');
+  // Cada párrafo va en dos trozos: lo ya escrito y lo que falta, que ocupa
+  // su sitio sin verse para que la ventana no crezca a tirones. El texto se
+  // asigna siempre con textContent: nunca se interpreta como HTML lo que
+  // haya escrito el jugador.
+  el.notiCuerpo.replaceChildren(...lineas.map((linea) => {
+    const parrafo = document.createElement('p');
+    if (linea.destacado) parrafo.className = 'destacado';
+    const escrito = document.createElement('span');
+    const resto = document.createElement('span');
+    resto.className = 'noti-resto';
+    if (animarTexto) resto.textContent = linea.texto;
+    else escrito.textContent = linea.texto;
+    parrafo.append(escrito, resto);
+    return parrafo;
+  }));
 
-  const parrafos = [...el.notiCuerpo.querySelectorAll('p')];
   if (!animarTexto) {
-    parrafos.forEach((p, i) => { p.textContent = lineas[i].texto; });
     escribiendo = null;
     return;
   }
-  escribir(parrafos, lineas);
+  escribir([...el.notiCuerpo.querySelectorAll('p')], lineas);
 }
 
 /** Va soltando el texto letra a letra, como los mensajes del Sistema. */
@@ -110,11 +118,17 @@ function escribir(parrafos, lineas) {
   let indice = 0;
   let posicion = 0;
 
+  // El cursor vive en el trozo ya escrito, para que salga pegado a la última
+  // letra y no al final del párrafo entero.
+  const escrito = (parrafo) => parrafo.firstElementChild;
+  const resto = (parrafo) => parrafo.lastElementChild;
+
   const terminar = () => {
     clearInterval(temporizador);
     parrafos.forEach((p, i) => {
-      p.textContent = lineas[i].texto;
-      p.classList.remove('escribiendo');
+      escrito(p).textContent = lineas[i].texto;
+      escrito(p).classList.remove('escribiendo');
+      resto(p).textContent = '';
     });
     escribiendo = null;
   };
@@ -124,12 +138,13 @@ function escribir(parrafos, lineas) {
 
     const parrafo = parrafos[indice];
     const texto = lineas[indice].texto;
-    parrafo.classList.add('escribiendo');
+    escrito(parrafo).classList.add('escribiendo');
     posicion += 1;
-    parrafo.textContent = texto.slice(0, posicion);
+    escrito(parrafo).textContent = texto.slice(0, posicion);
+    resto(parrafo).textContent = texto.slice(posicion);
 
     if (posicion >= texto.length) {
-      parrafo.classList.remove('escribiendo');
+      escrito(parrafo).classList.remove('escribiendo');
       indice += 1;
       posicion = 0;
     }

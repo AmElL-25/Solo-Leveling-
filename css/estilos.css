@@ -492,6 +492,7 @@ p { margin: 0; }
 .notificacion__cabecera {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   font-size: 0.72rem;
   letter-spacing: 0.24em;
@@ -516,6 +517,7 @@ p { margin: 0; }
 
 .notificacion__ventana h2 {
   font-size: 0.95rem;
+  text-align: center;
   color: #fff;
   text-shadow: 0 0 14px rgba(95, 211, 255, 0.5);
   margin-bottom: 10px;
@@ -523,25 +525,46 @@ p { margin: 0; }
 .notificacion__ventana p {
   font-size: 0.8rem;
   line-height: 1.7;
+  text-align: center;
   color: var(--texto);
   margin-bottom: 4px;
 }
 .notificacion__ventana .destacado { color: var(--dorado); font-size: 0.88rem; }
 .notificacion__ventana .boton { margin-top: 16px; width: 100%; }
 
+/* Zona de penalización: la ventana entera se vuelve roja, no solo el marco.
+   Los tonos del texto están elegidos para mantener el contraste sobre el
+   panel rojo oscuro; si se suben de saturación, dejan de leerse. */
+.notificacion--peligro { background: rgba(26, 2, 8, 0.82); }
 .notificacion--peligro .notificacion__barra {
-  background: linear-gradient(90deg, rgba(255, 95, 109, 0.35), #ff8f98 20%, #ff8f98 80%, rgba(255, 95, 109, 0.35));
-  box-shadow: 0 0 18px rgba(255, 95, 109, 0.7);
+  background: linear-gradient(90deg, rgba(255, 26, 45, 0.4), #ff1f33 18%, #ff4b5c 50%, #ff1f33 82%, rgba(255, 26, 45, 0.4));
+  box-shadow: 0 0 22px rgba(255, 26, 45, 0.9);
 }
 .notificacion--peligro .notificacion__barra::before,
-.notificacion--peligro .notificacion__barra::after { background: #ff8f98; box-shadow: 0 0 10px rgba(255, 95, 109, 0.9); }
+.notificacion--peligro .notificacion__barra::after { background: #ff3345; box-shadow: 0 0 12px rgba(255, 26, 45, 1); }
 .notificacion--peligro .notificacion__panel {
-  border-color: rgba(255, 95, 109, 0.6);
-  box-shadow: 0 0 40px rgba(255, 95, 109, 0.32), inset 0 0 60px rgba(122, 31, 43, 0.3);
+  background:
+    repeating-linear-gradient(112deg, rgba(255, 255, 255, 0.04) 0 1px, transparent 1px 34px),
+    repeating-linear-gradient(-71deg, rgba(255, 255, 255, 0.028) 0 1px, transparent 1px 57px),
+    linear-gradient(160deg, rgba(104, 14, 30, 0.95), rgba(38, 5, 14, 0.97));
+  border-color: rgba(255, 40, 58, 0.8);
+  box-shadow: 0 0 48px rgba(255, 26, 45, 0.45), inset 0 0 70px rgba(160, 12, 30, 0.4);
 }
-.notificacion--peligro .notificacion__cabecera { border-bottom-color: rgba(255, 95, 109, 0.45); }
-.notificacion--peligro .notificacion__icono { color: #ff8f98; border-color: #ff8f98; box-shadow: 0 0 8px rgba(255, 95, 109, 0.6); }
-.notificacion--peligro h2 { color: #ffb9be; text-shadow: 0 0 14px rgba(255, 95, 109, 0.5); }
+.notificacion--peligro .notificacion__cabecera { border-bottom-color: rgba(255, 40, 58, 0.5); }
+.notificacion--peligro .notificacion__icono { color: #ff3345; border-color: #ff3345; box-shadow: 0 0 10px rgba(255, 26, 45, 0.85); }
+.notificacion--peligro h2 { color: #ff6b78; text-shadow: 0 0 18px rgba(255, 26, 45, 0.75); }
+.notificacion--peligro .notificacion__ventana p { color: #ffdfe2; }
+.notificacion--peligro .notificacion__ventana .destacado { color: #ff7d88; }
+.notificacion--peligro .escribiendo::after { color: #ff4b5c; }
+.notificacion--peligro .boton--primario {
+  background: linear-gradient(180deg, rgba(255, 40, 58, 0.32), rgba(120, 12, 26, 0.32));
+  border-color: rgba(255, 40, 58, 0.75);
+}
+.notificacion--peligro .boton--primario:hover:not(:disabled),
+.notificacion--peligro .boton--primario:focus-visible:not(:disabled) {
+  border-color: #ff4b5c;
+  box-shadow: 0 0 14px rgba(255, 26, 45, 0.55);
+}
 
 @keyframes aparecer {
   from { opacity: 0; transform: scale(0.9) translateY(10px); }
@@ -686,6 +709,10 @@ body.en-castigo .rejilla {
 .titulo-item__bono { color: var(--dorado); font-size: 0.68rem; white-space: nowrap; }
 
 /* ------------------------- efecto máquina de escribir ------------------------- */
+
+/* Lo que falta por escribir ocupa su sitio pero no se ve: así la ventana no
+   crece a tirones ni el texto centrado baila mientras entra letra a letra. */
+.noti-resto { visibility: hidden; }
 
 .escribiendo::after {
   content: '▌';

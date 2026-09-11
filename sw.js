@@ -1,7 +1,7 @@
 /* Service worker: guarda la app en caché para que funcione sin conexión.
    Sube CACHE al cambiar cualquier archivo para forzar la actualización. */
 
-const CACHE = 'sistema-v13';
+const CACHE = 'sistema-v14';
 
 const ARCHIVOS = [
   './',

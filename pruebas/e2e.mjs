@@ -533,6 +533,19 @@ const vivo = ([r, g, b]) => r > 200 && r - g > 120 && r - b > 100;
 comprobar('el marco de la penalización es rojo vivo', vivo(rojo.marco), rojo.marco.join(','));
 comprobar('el título de la penalización es rojo', vivo(rojo.titulo), rojo.titulo.join(','));
 
+// El panel sigue siendo la ventana azul del Sistema: en el anime lo rojo es el
+// marco y el texto, no el fondo. Se compara con el panel sin penalización.
+const fondos = await page.evaluate(() => {
+  const panel = document.querySelector('.notificacion__panel');
+  const noti = document.querySelector('#notificacion');
+  const conPeligro = getComputedStyle(panel).backgroundImage;
+  noti.classList.remove('notificacion--peligro');
+  const normal = getComputedStyle(panel).backgroundImage;
+  noti.classList.add('notificacion--peligro');
+  return { conPeligro, normal };
+});
+comprobar('el fondo del panel no se tiñe de rojo', fondos.conPeligro === fondos.normal);
+
 // Con el texto centrado, la ventana no puede cambiar de tamaño mientras escribe
 const altoAlEmpezar = sitio.alto;
 await page.waitForTimeout(900);

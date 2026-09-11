@@ -8,17 +8,26 @@ import { t } from '../modo/vista.js';
 
 import { STATS } from '../jugador/reglas.js';
 import { INDICADORES, buscarIndicador } from '../negocio/catalogo.js';
-import { misionCompleta, progresoMision, porcentajeDia } from './reglas.js';
+import {
+  misionCompleta, progresoMision, porcentajeDia,
+  delArea, diarias, semanales, obligatorias, AREAS,
+} from './reglas.js';
 
 const $ = (selector) => document.querySelector(selector);
 
 export const elMisiones = {
   lista: $('#lista-misiones'),
+  semanales: $('#lista-semanales'),
+  seccionSemanales: $('#seccion-semanales'),
+  cuposSemana: $('#semana-cupos'),
+  otroCarril: $('#otro-carril'),
   diaPorcentaje: $('#dia-porcentaje'),
   btnNueva: $('#btn-nueva'),
   formMision: $('#form-mision'),
   btnCancelar: $('#btn-cancelar-mision'),
 };
+
+const NOMBRE_CARRIL = { personal: 'EL SISTEMA', profesional: 'SALES' };
 
 const escapar = (texto) => String(texto).replace(/[&<>"']/g, (c) => (
   { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
@@ -29,12 +38,45 @@ const numero = (valor) => (Number.isInteger(valor) ? String(valor) : String(Math
 
 const nombreStat = (id) => STATS.find((s) => s.id === id)?.nombre ?? id;
 
-export function renderMisiones(misiones) {
-  elMisiones.diaPorcentaje.textContent = `${Math.round(porcentajeDia(misiones) * 100)}%`;
+/**
+ * Pinta solo el carril que se está mirando. El otro queda resumido en una
+ * línea con un toque para cambiar: el agua y los pasos se hacen en horario de
+ * oficina y hay que poder apuntarlos sin pelearse con el modo.
+ */
+export function renderMisiones(misiones, area = 'personal') {
+  const delDia = diarias(delArea(misiones, area));
+  const cupos = semanales(delArea(misiones, area));
 
-  elMisiones.lista.innerHTML = misiones.length
-    ? misiones.map(tarjetaMision).join('')
-    : '<p class="vacio">Sin misiones. Crea la primera para empezar a subir de nivel.</p>';
+  elMisiones.diaPorcentaje.textContent = `${Math.round(porcentajeDia(misiones, area) * 100)}%`;
+  elMisiones.lista.innerHTML = delDia.length
+    ? delDia.map(tarjetaMision).join('')
+    : '<p class="vacio">Sin objetivos diarios en este carril. Créalos desde el engranaje.</p>';
+
+  elMisiones.seccionSemanales.hidden = cupos.length === 0;
+  // Vaciar de verdad: si se queda el marcado de la plantilla anterior, sigue
+  // ahí aunque no se vea.
+  if (!cupos.length) elMisiones.semanales.innerHTML = '';
+  if (cupos.length) {
+    const hechos = obligatorias(cupos).filter(misionCompleta).length;
+    elMisiones.cuposSemana.textContent = `${hechos} / ${obligatorias(cupos).length}`;
+    elMisiones.semanales.innerHTML = cupos.map(tarjetaMision).join('');
+  }
+
+  renderOtroCarril(misiones, area);
+}
+
+function renderOtroCarril(misiones, area) {
+  const otra = AREAS.find((a) => a !== area);
+  const suyas = diarias(obligatorias(delArea(misiones, otra)));
+  elMisiones.otroCarril.hidden = suyas.length === 0;
+  if (!suyas.length) return;
+
+  const hechas = suyas.filter(misionCompleta).length;
+  elMisiones.otroCarril.innerHTML = `
+    <span class="otro-carril__nombre">${NOMBRE_CARRIL[otra]}</span>
+    <span class="otro-carril__dato">${hechas} de ${suyas.length} hoy</span>
+    <span class="otro-carril__ir" aria-hidden="true">→</span>`;
+  elMisiones.otroCarril.setAttribute('aria-label', `Cambiar a ${NOMBRE_CARRIL[otra]}`);
 }
 
 function tarjetaMision(mision) {
@@ -79,9 +121,20 @@ function tarjetaMision(mision) {
 export function renderListaObjetivos(misiones) {
   const lista = $('#lista-objetivos');
   if (!lista) return;
+  if (!misiones.length) {
+    lista.innerHTML = '<p class="vacio">Todavía no hay objetivos. Crea el primero.</p>';
+    return;
+  }
+  // Agrupados por carril, que es como se piensan y como se editan.
+  lista.innerHTML = AREAS.map((area) => {
+    const suyas = delArea(misiones, area);
+    if (!suyas.length) return '';
+    return `<p class="objetivos-grupo">${NOMBRE_CARRIL[area]}</p>${filasObjetivo(suyas)}`;
+  }).join('');
+}
 
-  lista.innerHTML = misiones.length
-    ? misiones.map((mision) => {
+function filasObjetivo(misiones) {
+  return misiones.map((mision) => {
       const indicador = buscarIndicador(mision.indicador);
       const meta = mision.tipo === 'checkbox'
         ? 'hecho / no hecho'
@@ -91,7 +144,8 @@ export function renderListaObjetivos(misiones) {
           <div class="objetivo-fila__texto">
             <strong>${escapar(mision.nombre)}</strong>
             <small>
-              ${meta} · +${mision.xp} XP · ${escapar(nombreStat(mision.stat))}
+              ${mision.periodo === 'semana' ? 'cupo semanal · ' : ''}${meta}
+              · +${mision.xp} XP · ${escapar(nombreStat(mision.stat))}
               ${indicador ? ` · ${escapar(indicador.nombre)}` : ''}
               ${mision.opcional ? ' · opcional' : ''}
             </small>
@@ -101,8 +155,7 @@ export function renderListaObjetivos(misiones) {
             <button class="icono" data-accion="borrar" type="button" title="Borrar" aria-label="Borrar ${escapar(mision.nombre)}">&#10005;</button>
           </div>
         </div>`;
-    }).join('')
-    : '<p class="vacio">Todavía no hay objetivos. Crea el primero.</p>';
+  }).join('');
 }
 
 /* --------------------------- diálogo de alta y edición --------------------------- */
@@ -117,6 +170,8 @@ const campos = {
   paso: $('#campo-paso'),
   xp: $('#campo-xp'),
   stat: $('#campo-stat'),
+  area: $('#campo-area'),
+  periodo: $('#campo-periodo'),
   indicador: $('#campo-indicador'),
   opcional: $('#campo-opcional'),
 };
@@ -141,6 +196,8 @@ export function abrirDialogoMision(mision = null) {
   campos.paso.value = mision?.paso ?? 10;
   campos.xp.value = mision?.xp ?? 40;
   campos.stat.value = mision?.stat ?? 'fuerza';
+  campos.area.value = mision?.area ?? 'personal';
+  campos.periodo.value = mision?.periodo ?? 'dia';
   campos.indicador.value = mision?.indicador ?? '';
   campos.opcional.checked = Boolean(mision?.opcional);
   alternarCamposContador();
@@ -165,5 +222,7 @@ export function leerFormularioMision() {
     stat: campos.stat.value,
     indicador: campos.indicador.value || null,
     opcional: campos.opcional.checked,
+    area: campos.area.value === 'profesional' ? 'profesional' : 'personal',
+    periodo: campos.periodo.value === 'semana' ? 'semana' : 'dia',
   };
 }

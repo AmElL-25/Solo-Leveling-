@@ -5,7 +5,8 @@
    ========================================================================== */
 
 import { fechaHoy } from '../nucleo/fecha.js';
-import { CASTIGOS_DIA, CASTIGOS_JEFE, MOTIVOS } from './catalogo.js';
+import { misionCompleta, obligatorias, delArea, diarias } from '../misiones/reglas.js';
+import { RESERVAS, FACTOR_PENITENCIA, MOTIVOS } from './catalogo.js';
 
 function num(valor, porDefecto, minimo = -Infinity) {
   const n = Number(valor);
@@ -16,7 +17,10 @@ const dec = (valor, porDefecto, minimo = 0) => Math.round(num(valor, porDefecto,
 const entero = (valor, porDefecto, minimo = 0) => Math.round(num(valor, porDefecto, minimo));
 
 export function estadoInicialCastigo() {
-  return { activo: false, aceptado: false, origen: null, desde: null, rachaPerdida: 0, mision: null };
+  return {
+    activo: false, aceptado: false, origen: null, area: null,
+    desde: null, rachaPerdida: 0, mision: null,
+  };
 }
 
 function normalizarMisionCastigo(mision) {
@@ -40,6 +44,7 @@ export function normalizarCastigo(castigo) {
     activo: Boolean(datos.activo),
     aceptado: Boolean(datos.aceptado),
     origen: datos.origen === 'jefe' || datos.origen === 'dia' ? datos.origen : base.origen,
+    area: datos.area === 'profesional' ? 'profesional' : (datos.activo ? 'personal' : base.area),
     desde: datos.desde ? String(datos.desde).slice(0, 10) : null,
     rachaPerdida: entero(datos.rachaPerdida, 0, 0),
     mision,
@@ -47,22 +52,54 @@ export function normalizarCastigo(castigo) {
 }
 
 /**
- * Asigna un castigo si no había otro pendiente. Un castigo a la vez: quien ya
- * debe una penitencia no acumula otra, la paga y sigue.
+ * La penitencia es lo que dejaste sin hacer, a 1,5×. Tiene más sentido que un
+ * castigo al azar: si ayer no caminaste, hoy caminas más; no te caen cien
+ * flexiones que además te pueden lesionar.
+ *
+ * Solo sirven las misiones de contador: de una de sí/no («dormir 7 h») no se
+ * puede sacar una penitencia con la que medir el progreso.
  */
-export function asignarCastigo(estado, origen, hoy = fechaHoy(), aleatorio = Math.random) {
+export function penitenciaDe(misiones, area) {
+  const candidatas = diarias(obligatorias(delArea(misiones, area)))
+    .filter((m) => m.tipo === 'contador' && !misionCompleta(m));
+  if (!candidatas.length) return null;
+
+  // La que más experiencia valía: es la que más pesaba en el día.
+  const peor = candidatas.reduce((a, b) => (b.xp > a.xp ? b : a));
+  const objetivo = Math.max(0.5, Math.round(peor.objetivo * FACTOR_PENITENCIA * 100) / 100);
+  return {
+    nombre: `Penitencia: ${peor.nombre}`.slice(0, 40),
+    tipo: 'contador',
+    objetivo,
+    unidad: peor.unidad,
+    paso: peor.paso,
+    progreso: 0,
+  };
+}
+
+/**
+ * Asigna un castigo si no había otro pendiente. Un castigo a la vez: quien ya
+ * debe una penitencia no acumula otra, la paga y sigue. El castigo siempre es
+ * del carril que se falló: lo del cuerpo se paga con cuerpo y lo del oficio
+ * con oficio, nunca cruzado.
+ */
+export function asignarCastigo(estado, origen, area = 'personal', hoy = fechaHoy(), aleatorio = Math.random) {
   if (estado.castigo.activo) return null;
 
-  const lista = origen === 'jefe' ? CASTIGOS_JEFE : CASTIGOS_DIA;
-  const plantilla = lista[Math.floor(aleatorio() * lista.length)];
+  const reserva = RESERVAS[area] ?? RESERVAS.personal;
+  const mision = (origen === 'dia' ? penitenciaDe(estado.misiones, area) : null)
+    ?? { ...reserva[Math.floor(aleatorio() * reserva.length)], progreso: 0 };
 
   estado.castigo = {
     activo: true,
     aceptado: false,
     origen,
+    area,
     desde: hoy,
-    rachaPerdida: origen === 'dia' ? estado.jugador.racha : estado.castigo.rachaPerdida,
-    mision: { ...plantilla, progreso: 0 },
+    rachaPerdida: origen === 'dia'
+      ? (estado.jugador.rachas[area] ?? 0)
+      : estado.castigo.rachaPerdida,
+    mision,
   };
   return estado.castigo;
 }
@@ -97,7 +134,7 @@ export function cumplirCastigo(estado) {
   const castigo = estado.castigo;
   if (!castigo.activo || !castigo.aceptado || !castigoCumplido(castigo)) return null;
 
-  const resumen = { origen: castigo.origen, nombre: castigo.mision.nombre };
+  const resumen = { origen: castigo.origen, area: castigo.area, nombre: castigo.mision.nombre };
   estado.castigo = estadoInicialCastigo();
   estado.jugador.castigosSuperados += 1;
   return resumen;

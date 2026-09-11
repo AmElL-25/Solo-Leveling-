@@ -35,6 +35,8 @@ export const TERMINOS = {
   },
   reclamar:       { sistema: 'RECLAMAR RECOMPENSA', sales: 'CERRAR EL DÍA' },
   reclamado:      { sistema: 'MISIÓN DIARIA COMPLETADA', sales: 'DÍA CERRADO' },
+  cuposSemana:    { sistema: 'ESTA SEMANA', sales: 'ESTA SEMANA' },
+  notiCupo:       { sistema: 'CUPO DE LA SEMANA CERRADO', sales: 'CUPO SEMANAL COMPLETADO' },
   nuevaMision:    { sistema: '＋ NUEVA MISIÓN', sales: '＋ NUEVO OBJETIVO' },
   dlgNueva:       { sistema: 'NUEVA MISIÓN', sales: 'NUEVO OBJETIVO' },
   dlgEditar:      { sistema: 'EDITAR MISIÓN', sales: 'EDITAR OBJETIVO' },

@@ -17,6 +17,8 @@ import { elJugador, renderVentanaEstado, renderStats } from './jugador/vista.js'
 import {
   ajustarProgreso, fijarProgreso, guardarMision, eliminarMision, misionCompleta,
 } from './misiones/reglas.js';
+import { otorgarXp } from './jugador/reglas.js';
+import { AREAS, diarias, obligatorias, delArea } from './misiones/reglas.js';
 import {
   elMisiones, renderMisiones, renderListaObjetivos,
   abrirDialogoMision, cerrarDialogoMision, leerFormularioMision,
@@ -26,7 +28,9 @@ import {
   elConfiguracion, abrirConfiguracion, cerrarConfiguracion, configuracionAbierta,
 } from './configuracion/vista.js';
 
-import { sincronizarDia, completarDia, recompensaDia } from './ciclo-diario/reglas.js';
+import {
+  sincronizarDia, completarDia, recompensaDia, recompensaSemanal, umbralDe,
+} from './ciclo-diario/reglas.js';
 import { elCicloDiario, renderReloj, renderAvisoDiario } from './ciclo-diario/vista.js';
 
 import {
@@ -68,6 +72,10 @@ import { aplicarModo, elModo, t } from './modo/vista.js';
 let estado = cargar();
 let modo = modoEfectivo(estado.ajustes);
 
+/* El interruptor de la cabecera no cambia solo las palabras: decide qué
+   carril estás mirando. SALES es el oficio; el Sistema, cuerpo y cabeza. */
+const carril = () => (modo === 'sales' ? 'profesional' : 'personal');
+
 /** Deja el modo, el sonido y el tipo de aviso en su sitio. */
 function sincronizarModo() {
   modo = modoEfectivo(estado.ajustes);
@@ -79,13 +87,17 @@ function sincronizarModo() {
 function render() {
   // El modo se fija antes de pintar: las vistas piden sus palabras al pintarse.
   sincronizarModo();
-  renderVentanaEstado(estado.jugador);
+  const area = carril();
+  renderVentanaEstado(estado.jugador, area);
   renderStats(estado.jugador);
-  renderMisiones(estado.misiones);
+  renderMisiones(estado.misiones, area);
   renderListaObjetivos(estado.misiones);
-  renderAvisoDiario(estado);
+  renderAvisoDiario(estado, area);
   renderCastigo(estado.castigo);
   renderPuerta(estado.puerta);
+  // El jefe y la puerta son del carril personal: en el profesional no pintan
+  // nada hasta que llegue su propia incursión.
+  document.querySelector('#retos-sistema').hidden = area !== 'personal';
   renderJefe(estado.jefe, estado.castigo.activo);
   renderTitulos(estado.jugador);
   renderClase(estado.jugador);
@@ -233,16 +245,23 @@ function avisarPuerta(puerta) {
 }
 
 function avisarMisionDiaria() {
-  if (estado.dia.avisado || estado.dia.completado) return;
+  // completado es un objeto por carril: preguntar por él a secas sería
+  // siempre cierto y el aviso no saldría nunca.
+  const cerrado = AREAS.every((a) => estado.dia.completado[a]);
+  if (estado.dia.avisado || cerrado) return;
   estado.dia.avisado = true;
-  const { total, oro } = recompensaDia(estado);
+  // Se anuncia el carril que se está mirando, no la suma de los dos: contar
+  // trece objetivos cuando en pantalla hay cinco no ayuda a nadie.
+  const area = carril();
+  const { total, oro } = recompensaDia(estado, area);
+  const pendientes = diarias(obligatorias(delArea(estado.misiones, area))).length;
   notificar({
     titulo: t('notiDiaria'),
     lineas: [
-      { texto: 'Preparación para convertirse en un guerrero.' },
-      { texto: `${estado.misiones.length} objetivos pendientes para hoy.` },
-      { texto: `Recompensa: ${total} XP · ${oro} oro · 1 punto`, destacado: true },
-      { texto: 'Fallar la misión conlleva penalización.' },
+      { texto: t('subtitulo') },
+      { texto: `${pendientes} objetivos para hoy en este carril.` },
+      { texto: `Recompensa: ${total} ${t('xp')} · ${oro} ${t('oroMinuscula')} · 1 punto`, destacado: true },
+      { texto: `El día cuenta a partir del ${Math.round(umbralDe(estado) * 100)} %.` },
     ],
     boton: 'EMPEZAR',
   });
@@ -251,20 +270,37 @@ function avisarMisionDiaria() {
 
 /* ---------------------------- ciclo del día ---------------------------- */
 
+const NOMBRE_CARRIL = { personal: 'EL SISTEMA', profesional: 'SALES' };
+
 function comprobarDia() {
   const resumen = sincronizarDia(estado);
   if (!resumen) return null;
 
-  if (!resumen.completado) {
-    const lineas = [
-      { texto: `Has fallado la misión del ${resumen.fecha} (${resumen.porcentaje} % completado).` },
-    ];
-    if (resumen.perdida > 0) lineas.push({ texto: `−${resumen.perdida} XP`, destacado: true });
-    if (resumen.vidaPerdida > 0) lineas.push({ texto: `−${resumen.vidaPerdida} HP` });
-    if (resumen.rachaPerdida > 0) lineas.push({ texto: `Racha rota: ${resumen.rachaPerdida} días perdidos.` });
-    lineas.push({ texto: 'Ganarás la mitad de experiencia hasta que completes un día entero.' });
+  // Un aviso por carril fallado: no es lo mismo dejar de entrenar que dejar
+  // de escuchar a los clientes, y el balance de cada uno se lee aparte.
+  for (const balance of resumen.balances) {
+    if (balance.cumplido || !balance.rachaPerdida && !balance.perdida && !balance.castigo) continue;
 
-    notificar({ titulo: t('notiCastigo'), lineas, tipo: 'peligro', boton: 'ACEPTO EL CASTIGO' });
+    const lineas = [
+      { texto: `${NOMBRE_CARRIL[balance.area]} — ${resumen.fecha}: ${balance.porcentaje} % cumplido.` },
+    ];
+    if (balance.perdida > 0) lineas.push({ texto: `−${balance.perdida} XP`, destacado: true });
+    if (balance.vidaPerdida > 0) lineas.push({ texto: `−${balance.vidaPerdida} HP` });
+    if (balance.rachaPerdida > 0) {
+      lineas.push({ texto: `Racha rota: ${balance.rachaPerdida} días perdidos.` });
+    }
+    lineas.push({
+      texto: balance.castigo
+        ? 'Ganarás la mitad de experiencia hasta que saldes el castigo.'
+        : 'Sin castigo: no llegaste, pero tampoco te quedaste parado.',
+    });
+
+    notificar({
+      titulo: t('notiCastigo'),
+      lineas,
+      tipo: 'peligro',
+      boton: balance.castigo ? 'ACEPTO EL CASTIGO' : 'ENTENDIDO',
+    });
     pitido('error');
   }
 
@@ -308,10 +344,39 @@ function resolverObjetivo(id, accion) {
   const signo = ahora ? 1 : -1;
   sumarFatiga(estado.jugador, FATIGA_MISION * signo);
   if (ahora) pitido('objetivo');
-  avisarJefeCaido(golpear(estado, danoPorMision(estado.jugador, mision) * signo));
+  // Solo lo personal le pega al jefe de la semana; lo profesional tiene lo suyo.
+  if (mision.area === 'personal') {
+    avisarJefeCaido(golpear(estado, danoPorMision(estado.jugador, mision) * signo));
+  }
+
+  // Los cupos de la semana no esperan al cierre del día: se cobran al
+  // cerrarlos, que es cuando de verdad has hecho el esfuerzo.
+  if (mision.periodo === 'semana' && ahora) cobrarCupoSemanal(mision);
 }
 
-elMisiones.lista.addEventListener('click', (evento) => {
+function cobrarCupoSemanal(mision) {
+  const { xp, oro } = recompensaSemanal(estado, mision);
+  const nivelPrevio = estado.jugador.nivel;
+  const niveles = otorgarXp(estado.jugador, xp);
+  estado.jugador.oro += oro;
+
+  notificar({
+    titulo: t('notiCupo'),
+    lineas: [
+      { texto: mision.nombre, destacado: true },
+      { texto: `Cupo de la semana cerrado. +${xp} ${t('xp')} · +${oro} ${t('oroMinuscula')}` },
+    ],
+    boton: 'RECIBIR',
+  });
+  pitido('logro');
+  avisarNivel({ niveles, nivelPrevio, nivel: estado.jugador.nivel });
+}
+
+/* Los cupos de la semana se pintan en su propia lista, así que los mismos
+   controles tienen que escucharse en las dos. */
+const listasDeMisiones = [elMisiones.lista, elMisiones.semanales];
+
+const alPulsarMision = (evento) => {
   const boton = evento.target.closest('button[data-accion]');
   if (!boton) return;
 
@@ -335,6 +400,24 @@ elMisiones.lista.addEventListener('click', (evento) => {
       return;
   }
   actualizar();
+};
+
+const alCambiarMision = (evento) => {
+  const campo = evento.target.closest('input[data-accion="fijar"]');
+  if (!campo) return;
+  const id = campo.closest('[data-id]')?.dataset.id;
+  resolverObjetivo(id, () => fijarProgreso(estado.misiones, id, Number(campo.value)));
+  actualizar();
+};
+
+for (const lista of listasDeMisiones) {
+  lista.addEventListener('click', alPulsarMision);
+  lista.addEventListener('change', alCambiarMision);
+}
+
+// Un toque para saltar al otro carril sin pasar por el interruptor.
+elMisiones.otroCarril.addEventListener('click', () => {
+  elModo.boton.click();
 });
 
 /* ---------------------------- configuración ---------------------------- */
@@ -369,14 +452,6 @@ elConfiguracion.lista.addEventListener('click', (evento) => {
   }
 });
 
-elMisiones.lista.addEventListener('change', (evento) => {
-  const campo = evento.target.closest('input[data-accion="fijar"]');
-  if (!campo) return;
-  const id = campo.closest('[data-id]')?.dataset.id;
-  resolverObjetivo(id, () => fijarProgreso(estado.misiones, id, Number(campo.value)));
-  actualizar();
-});
-
 elMisiones.btnNueva.addEventListener('click', () => abrirDialogoMision());
 elMisiones.btnCancelar.addEventListener('click', cerrarDialogoMision);
 
@@ -393,7 +468,7 @@ elMisiones.formMision.addEventListener('submit', (evento) => {
 /* ---------------------------- recompensa del día ---------------------------- */
 
 elCicloDiario.btnCompletar.addEventListener('click', () => {
-  const resultado = completarDia(estado);
+  const resultado = completarDia(estado, carril());
   if (!resultado) return;
 
   const lineas = [
@@ -523,7 +598,7 @@ elPlantillas.lista.addEventListener('click', (evento) => {
   if (!confirm(`Se sustituirán tus misiones diarias por "${plantilla.nombre}". ¿Continuar?`)) return;
 
   estado.misiones = misionesDePlantilla(plantilla.id);
-  estado.dia.completado = false;
+  estado.dia.completado = { personal: false, profesional: false };
   notificar({
     titulo: 'MISIÓN DIARIA ACTUALIZADA',
     lineas: [

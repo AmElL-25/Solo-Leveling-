@@ -9,6 +9,8 @@ export function estadoInicialAjustes() {
   return {
     sonido: true,
     animaciones: true,
+    // Qué parte del día hay que cumplir para que cuente. Perfección no.
+    umbral: 0.8,
     modo: 'sistema',
     horario: estadoInicialHorario(),
     forzado: null,
@@ -21,6 +23,7 @@ export function normalizarAjustes(ajustes) {
   return {
     sonido: ajustes?.sonido !== false,
     animaciones: ajustes?.animaciones !== false,
+    umbral: Math.min(1, Math.max(0.5, Number(ajustes?.umbral) || 0.8)),
     modo: normalizarModo(modo),
     horario: normalizarHorario(ajustes?.horario),
     forzado: normalizarForzado(ajustes?.forzado),

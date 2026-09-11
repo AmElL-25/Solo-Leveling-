@@ -924,6 +924,38 @@ body[data-modo="sales"] .escribiendo::after { display: none; }
 }
 
 
+/* ---------------------- el otro carril, de un vistazo ---------------------- */
+
+.otro-carril {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin-top: 14px;
+  padding: 9px 12px;
+  font: inherit;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  color: var(--tenue);
+  background: rgba(4, 12, 24, 0.4);
+  border: 1px dashed var(--borde);
+  border-radius: var(--radio);
+  cursor: pointer;
+  text-align: left;
+}
+.otro-carril:hover, .otro-carril:focus-visible { color: var(--cian-claro); border-color: var(--borde-fuerte); }
+.otro-carril__nombre { font-weight: 600; letter-spacing: 0.12em; }
+.otro-carril__dato { flex: 1; }
+.otro-carril__ir { font-size: 0.9rem; }
+
+.objetivos-grupo {
+  margin: 12px 0 4px;
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  color: var(--tenue);
+}
+.objetivos-grupo:first-child { margin-top: 0; }
+
 /* ============================== configuración ============================== */
 
 .icono--engranaje { font-size: 1.15rem; padding: 4px 8px; border-color: var(--borde); }

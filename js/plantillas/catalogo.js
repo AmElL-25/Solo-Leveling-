@@ -5,6 +5,29 @@
 
 export const PLANTILLAS = [
   {
+    id: 'preparacion-ascenso',
+    nombre: 'Preparación para el ascenso',
+    descripcion: 'Volver al cuerpo y aprender el oficio desde donde estás, sin equipo todavía.',
+    misiones: [
+      /* --- EL SISTEMA: cuerpo y cabeza --------------------------------- */
+      { nombre: 'Agua', tipo: 'contador', objetivo: 2.5, unidad: 'L', paso: 0.5, xp: 20, stat: 'vitalidad', area: 'personal' },
+      { nombre: 'Dormir 7 horas', tipo: 'checkbox', xp: 30, stat: 'vitalidad', area: 'personal' },
+      { nombre: 'Comer limpio', tipo: 'checkbox', xp: 35, stat: 'vitalidad', area: 'personal' },
+      { nombre: 'Pasos', tipo: 'contador', objetivo: 8000, unidad: 'pasos', paso: 1000, xp: 45, stat: 'agilidad', area: 'personal' },
+      { nombre: 'Diario del estoico', tipo: 'checkbox', xp: 25, stat: 'percepcion', area: 'personal' },
+      { nombre: 'Fuerza', tipo: 'contador', objetivo: 3, unidad: 'sesiones', paso: 1, xp: 90, stat: 'fuerza', area: 'personal', periodo: 'semana' },
+      { nombre: 'Ciclismo', tipo: 'contador', objetivo: 1, unidad: 'salidas', paso: 1, xp: 70, stat: 'agilidad', area: 'personal', periodo: 'semana' },
+      { nombre: 'Pesaje', tipo: 'contador', objetivo: 1, unidad: 'pesajes', paso: 1, xp: 20, stat: 'vitalidad', area: 'personal', periodo: 'semana' },
+
+      /* --- SALES: el oficio -------------------------------------------- */
+      { nombre: 'Escucha en llamada', tipo: 'contador', objetivo: 1, unidad: 'notas', paso: 1, xp: 40, stat: 'percepcion', area: 'profesional', indicador: 'contactos' },
+      { nombre: 'Formación', tipo: 'contador', objetivo: 20, unidad: 'min', paso: 5, xp: 35, stat: 'inteligencia', area: 'profesional' },
+      { nombre: 'Conversación de valor', tipo: 'contador', objetivo: 1, unidad: 'llamadas', paso: 1, xp: 80, stat: 'percepcion', area: 'profesional', periodo: 'semana', indicador: 'reuniones' },
+      { nombre: 'Aplicar una idea del libro', tipo: 'contador', objetivo: 1, unidad: 'ideas', paso: 1, xp: 60, stat: 'inteligencia', area: 'profesional', periodo: 'semana' },
+      { nombre: 'Avance hacia el ascenso', tipo: 'contador', objetivo: 1, unidad: 'avances', paso: 1, xp: 90, stat: 'inteligencia', area: 'profesional', periodo: 'semana' },
+    ],
+  },
+  {
     id: 'gerente-fisico',
     nombre: 'Gerente de ventas + físico',
     descripcion: 'Dirigir al equipo, vender y recuperar el cuerpo. Con registro de ventas.',
@@ -64,6 +87,6 @@ export const PLANTILLAS = [
   },
 ];
 
-export const PLANTILLA_INICIAL = 'gerente-fisico';
+export const PLANTILLA_INICIAL = 'preparacion-ascenso';
 
 export const buscarPlantilla = (id) => PLANTILLAS.find((p) => p.id === id) ?? PLANTILLAS[0];

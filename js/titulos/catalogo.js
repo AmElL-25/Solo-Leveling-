@@ -3,6 +3,12 @@
    desbloquearlo y cuánta experiencia extra otorga al llevarlo equipado.
    ========================================================================== */
 
+/* La marca es la mejor racha de cualquiera de los dos carriles. Se calcula
+   aquí a mano y no se importa de jugador/reglas.js: ese módulo ya importa
+   este, y cerrar el círculo sería pedir problemas. */
+const mejorRacha = (jugador) =>
+  Math.max(jugador.mejoresRachas?.personal ?? 0, jugador.mejoresRachas?.profesional ?? 0);
+
 export const TITULOS = [
   {
     id: 'ninguno',
@@ -23,7 +29,7 @@ export const TITULOS = [
     nombre: 'Lobo solitario',
     descripcion: 'Mantén una racha de 7 días.',
     bono: 5,
-    condicion: (estado) => estado.jugador.mejorRacha >= 7,
+    condicion: (estado) => mejorRacha(estado.jugador) >= 7,
   },
   {
     id: 'indomable',
@@ -58,7 +64,7 @@ export const TITULOS = [
     nombre: 'El que nunca duerme',
     descripcion: 'Mantén una racha de 30 días.',
     bono: 10,
-    condicion: (estado) => estado.jugador.mejorRacha >= 30,
+    condicion: (estado) => mejorRacha(estado.jugador) >= 30,
   },
   {
     id: 'matagigantes',

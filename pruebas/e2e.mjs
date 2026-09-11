@@ -55,10 +55,12 @@ const fijar = async (nombre, valor) => {
   await campo.fill(String(valor));
   await campo.dispatchEvent('change');
 };
+/* Solo las diarias del carril visible: los cupos de la semana viven en su
+   propia lista y al cerrarlos saltan ventanas que taparían lo siguiente. */
 const completarTodo = async (incluirOpcionales = false) => {
   const tarjetas = incluirOpcionales
-    ? await page.locator('.mision').all()
-    : await page.locator('.mision:not(.mision--opcional)').all();
+    ? await page.locator('#lista-misiones .mision').all()
+    : await page.locator('#lista-misiones .mision:not(.mision--opcional)').all();
   for (const tarjeta of tarjetas) {
     const campo = tarjeta.locator('input[data-accion="fijar"]');
     if (await campo.count()) { await campo.fill('9999'); await campo.dispatchEvent('change'); }
@@ -75,6 +77,10 @@ const cerrarConfig = async (tab = 'mision') => {
 };
 const filaObjetivo = (nombre) => page.locator('.objetivo-fila', { hasText: nombre });
 
+/** Salta al otro carril con el interruptor de la cabecera. */
+const cambiarCarril = async () => { await page.click('#btn-modo'); await page.waitForTimeout(120); };
+const carrilActual = () => page.locator('body').getAttribute('data-modo');
+
 /* ------------------------------- 1. arranque ------------------------------- */
 
 await page.goto(URL);
@@ -83,37 +89,43 @@ await page.waitForSelector('.mision');
 comprobar('la misión diaria se anuncia', await titulo() === 'HA LLEGADO LA MISIÓN DIARIA');
 await aceptar();
 
-comprobar('el set inicial es el de gerente de ventas y físico',
-  await page.locator('.mision').count() === 12);
-comprobar('trae misiones de resultado opcionales',
-  await page.locator('.mision--opcional').count() === 2);
-comprobar('trae misiones de trabajo', await mision('Prospección').count() === 1);
-comprobar('trae misiones de físico', await mision('Entrenamiento de fuerza').count() === 1);
+comprobar('el carril personal trae sus cinco objetivos del día',
+  await page.locator('#lista-misiones .mision').count() === 5,
+  `(${await page.locator('#lista-misiones .mision').count()})`);
+comprobar('y sus tres cupos de la semana',
+  await page.locator('#lista-semanales .mision').count() === 3);
+comprobar('en el carril personal está el cuerpo', await mision('Pasos').count() === 1);
+comprobar('no se cuela nada del oficio', await mision('Escucha en llamada').count() === 0);
+comprobar('el otro carril se resume en una línea',
+  (await page.locator('#otro-carril').textContent()).includes('SALES'));
 comprobar('ventana de estado con vida', /^\d+\/\d+$/.test(await page.locator('#hp-texto').textContent()));
 comprobar('poder de combate calculado', Number(await page.locator('#poder').textContent()) > 0);
 comprobar('empieza sin clase', await page.locator('#clase').textContent() === 'Sin clase');
-comprobar('advertencia del Sistema',
-  (await page.locator('#aviso-diaria').textContent()).includes('castigo correspondiente'));
+comprobar('el aviso dice cuánto falta para el umbral',
+  (await page.locator('#aviso-diaria').textContent()).includes('el día cuenta a partir del 80 %'));
 comprobar('el botón de recompensa empieza deshabilitado', await page.locator('#btn-completar').isDisabled());
 
 /* ------------------------- 2. progreso, fatiga y jefe ------------------------- */
 
 const inicial = await leerEstado();
 comprobar('aparece un jefe al empezar la semana', Boolean(inicial.jefe));
-comprobar('la vida del jefe sale de las misiones obligatorias', inicial.jefe.vidaMaxima === 3060,
+comprobar('la vida del jefe sale solo del carril personal',
+  inicial.jefe.vidaMaxima === Math.max(100, Math.round(
+    inicial.misiones.filter((m) => m.area === 'personal' && !m.opcional)
+      .reduce((t, m) => t + m.xp, 0) * 6 * (1 + 625 / 1500))),
   `(${inicial.jefe?.vidaMaxima})`);
 comprobar('la tarjeta del jefe se pinta', await page.locator('.jefe').count() === 1);
 
-await mision('Prospección').locator('[data-accion="mas"]').click();
+await mision('Pasos').locator('[data-accion="mas"]').click();
 comprobar('el botón + suma el paso',
-  (await mision('Prospección').locator('.barra__texto').textContent()).trim().startsWith('5 / 20'));
+  (await mision('Pasos').locator('.barra__texto').textContent()).trim().startsWith('1000 / 8000'));
 
-await fijar('Prospección', 9999);
+await fijar('Pasos', 9999);
 comprobar('completar un objetivo genera fatiga',
   Number(await page.locator('#fatiga-texto').textContent()) > 0);
 const golpeMision = inicial.jefe.vidaMaxima - (await leerEstado()).jefe.vida;
 comprobar('completar un objetivo daña al jefe', golpeMision > 0, `(${golpeMision} de daño)`);
-await fijar('Prospección', 0);
+await fijar('Pasos', 0);
 comprobar('deshacerlo le devuelve la vida al jefe',
   (await leerEstado()).jefe.vida === inicial.jefe.vidaMaxima);
 comprobar('deshacerlo devuelve la fatiga',
@@ -122,7 +134,7 @@ comprobar('deshacerlo devuelve la fatiga',
 /* --------------------------- 3. recompensa del día --------------------------- */
 
 await completarTodo();
-comprobar('las opcionales no bloquean el día',
+comprobar('el carril llega al 100 %',
   await page.locator('#dia-porcentaje').textContent() === '100%');
 comprobar('se habilita reclamar', !(await page.locator('#btn-completar').isDisabled()));
 
@@ -134,7 +146,8 @@ const trasDia = await leerEstado();
 comprobar('gana oro', trasDia.jugador.oro > 0, `(${trasDia.jugador.oro})`);
 comprobar('sube de nivel', trasDia.jugador.nivel > 1, `(nivel ${trasDia.jugador.nivel})`);
 comprobar('desbloquea el título Superviviente', trasDia.jugador.titulos.includes('superviviente'));
-comprobar('la racha sube a 1', trasDia.jugador.racha === 1);
+comprobar('la racha personal sube a 1', trasDia.jugador.rachas.personal === 1);
+comprobar('la profesional se queda donde estaba', trasDia.jugador.rachas.profesional === 0);
 comprobar('no se puede reclamar dos veces', await page.locator('#btn-completar').isDisabled());
 
 /* ------------------------------ 4. títulos ------------------------------ */
@@ -208,9 +221,17 @@ comprobar('la ventana muestra la clase', await page.locator('#clase').textConten
 
 /* ------------------- 8. fallar el día: castigo y bloqueo ------------------- */
 
+// Se deja el día a cero a propósito: ahora el castigo depende del porcentaje
+// cumplido, así que arrastrar el progreso de las secciones anteriores daría
+// un día aprobado y no habría castigo que comprobar.
 await escribirEstado({
   dia: { fecha: '2000-01-01', completado: false, xpGanada: 0, avisado: true },
-  jugador: { ...conClase.jugador, racha: 9, oro: 1000 },
+  misiones: conClase.misiones.map((m) => ({ ...m, progreso: 0 })),
+  jugador: {
+    ...conClase.jugador,
+    rachas: { personal: 9, profesional: 0 },
+    oro: 1000,
+  },
 });
 await page.reload();
 await page.waitForSelector('.mision');
@@ -223,7 +244,7 @@ comprobar('el castigo queda activo', castigado.castigo.activo === true);
 comprobar('el castigo trae misión propia', Boolean(castigado.castigo.mision?.nombre));
 comprobar('el castigo empieza sin aceptar', castigado.castigo.aceptado === false);
 comprobar('guarda la racha perdida', castigado.castigo.rachaPerdida === 9);
-comprobar('rompe la racha', castigado.jugador.racha === 0);
+comprobar('rompe la racha del carril', castigado.jugador.rachas.personal === 0);
 comprobar('quita vida', castigado.jugador.hp > 0 && castigado.jugador.hp < 328);
 comprobar('la sección de castigo es visible', await page.locator('#seccion-castigo').isVisible());
 comprobar('la banda de castigo es visible', await page.locator('#banda-castigo').isVisible());
@@ -292,7 +313,7 @@ await page.selectOption('#campo-tipo', 'checkbox');
 await page.selectOption('#campo-stat', 'inteligencia');
 await page.click('#form-mision button[value="guardar"]');
 await cerrarConfig();
-comprobar('se añade la misión', await page.locator('.mision').count() === 6);
+comprobar('se añade la misión', await page.locator('#lista-misiones .mision').count() === 6);
 const sencilla = mision('Leer 20 páginas');
 await sencilla.locator('[data-accion="alternar"]').click();
 comprobar('la casilla se marca como hecha',
@@ -301,7 +322,7 @@ await abrirConfig();
 page.once('dialog', (d) => d.accept());
 await filaObjetivo('Leer 20 páginas').locator('[data-accion="borrar"]').click();
 await cerrarConfig();
-comprobar('se borra la misión', await page.locator('.mision').count() === 5);
+comprobar('se borra la misión', await page.locator('#lista-misiones .mision').count() === 5);
 
 /* ---------------------- 13. indicadores y cuadro de mando ---------------------- */
 
@@ -309,6 +330,17 @@ await page.evaluate(() => localStorage.clear());
 await page.reload();
 await page.waitForSelector('.mision');
 await aceptar();
+
+// La plantilla de gerente sí tiene cierres y facturación: es la que mide
+// resultados, y sigue ahí para cuando llegue el puesto.
+await abrirConfig();
+page.once('dialog', (d) => d.accept());
+await page.click('[data-plantilla="gerente-fisico"]');
+await page.waitForTimeout(150);
+await aceptar();          // la ventana del Sistema tapa el apartado: primero se cierra
+await cerrarConfig();
+comprobar('se puede volver a la plantilla de gerente',
+  await mision('Prospección').count() === 1);
 
 await fijar('Prospección', 20);
 await fijar('Propuestas enviadas', 9999);   // el progreso se limita al objetivo: 3
@@ -321,14 +353,18 @@ comprobar('el cuadro muestra las propuestas',
 comprobar('sin cierres todavía no hay conversión',
   (await page.locator('#cuadro-mes').textContent()).includes('sin propuestas') === false);
 
-// Un cierre da conversión y hace el doble de daño que la actividad
-const vidaAntes = (await leerEstado()).jefe.vida;
+// Un cierre da conversión y hace el doble de daño que la actividad. Se mide
+// contra una misión de actividad de la misma plantilla, no contra la de antes.
 await page.click('.pestana[data-tab="mision"]');
-await fijar('Ventas cerradas', 1);
+const vidaLimpia = (await leerEstado()).jefe.vida;
+await fijar('Reuniones con clientes', 9999);   // 40 XP, actividad
+const danoActividad = vidaLimpia - (await leerEstado()).jefe.vida;
+const vidaAntes = (await leerEstado()).jefe.vida;
+await fijar('Ventas cerradas', 1);             // 80 XP, resultado: ×2
 const danoCierre = vidaAntes - (await leerEstado()).jefe.vida;
 comprobar('la venta cerrada pega el doble que la actividad',
-  Math.abs(danoCierre - golpeMision * (80 / 40) * 2) <= 2,
-  `(${danoCierre} de daño)`);
+  Math.abs(danoCierre - danoActividad * (80 / 40) * 2) <= 2,
+  `(${danoCierre} frente a ${danoActividad})`);
 
 await page.click('.pestana[data-tab="cuadro"]');
 comprobar('la conversión aparece al haber cierres (1 de 3)',
@@ -366,6 +402,12 @@ comprobar('arranca en modo Sistema',
 comprobar('el interruptor ofrece el otro modo',
   await page.locator('#btn-modo').textContent() === 'MODO SALES');
 
+// Se vuelve a la plantilla de dos carriles: es la que tiene lado profesional.
+await page.evaluate(() => localStorage.clear());
+await page.reload();
+await page.waitForSelector('.mision');
+await aceptar();
+
 await page.click('#btn-modo');
 comprobar('el interruptor cambia a SALES',
   await page.locator('body').getAttribute('data-modo') === 'sales');
@@ -375,6 +417,11 @@ comprobar('el vocabulario cambia: el jefe es el objetivo de la semana',
   (await page.locator('#tab-mision').textContent()).includes('OBJETIVO DE LA SEMANA'));
 comprobar('el texto del aviso diario se traduce',
   (await page.locator('#aviso-diaria').textContent()).includes('plan de recuperación'));
+comprobar('en SALES se ven los objetivos del oficio',
+  await mision('Escucha en llamada').count() === 1);
+comprobar('y no los del cuerpo', await mision('Pasos').count() === 0);
+comprobar('el resumen del otro carril apunta al Sistema',
+  (await page.locator('#otro-carril').textContent()).includes('EL SISTEMA'));
 comprobar('las pestañas se traducen',
   (await page.locator('.pestana[data-tab="mision"]').textContent()).trim() === 'OBJETIVOS');
 comprobar('el modo se guarda', (await leerEstado()).ajustes.modo === 'sales');
@@ -382,12 +429,16 @@ comprobar('el modo se guarda', (await leerEstado()).ajustes.modo === 'sales');
 // Nada desaparece: siguen todas las secciones
 comprobar('en SALES sigue estando la tienda', await page.locator('#tab-tienda').count() === 1);
 comprobar('en SALES siguen estando los títulos', await page.locator('#lista-titulos .titulo-item').count() > 0);
-comprobar('en SALES sigue estando la puerta', await page.locator('#puerta').count() === 1);
+// El jefe y la puerta son retos del carril personal: en SALES no se enseñan,
+// pero siguen ahí y vuelven al cambiar de carril.
+comprobar('en SALES se esconden el jefe y la puerta',
+  await page.locator('#retos-sistema').isHidden());
+comprobar('pero no se pierden', await page.locator('#puerta').count() === 1);
 comprobar('en SALES sigue estando el cuadro de mando', await page.locator('#tab-cuadro').count() === 1);
 
 // Los avisos no bloquean: salen arriba y se van solos
 await page.click('.pestana[data-tab="mision"]');
-await page.locator('.mision', { hasText: 'Cardio' }).locator('[data-accion="mas"]').click();
+await page.locator('.mision', { hasText: 'Formación' }).locator('[data-accion="mas"]').click();
 await page.evaluate(async () => {
   const { notificar } = await import('/js/notificaciones/notificaciones.js');
   notificar({ titulo: 'PRUEBA', lineas: [{ texto: 'aviso discreto' }] });
@@ -463,14 +514,14 @@ comprobar('el apartado tiene las plantillas', await page.locator('#lista-plantil
 comprobar('el apartado tiene los datos', await page.locator('#btn-exportar').isVisible());
 
 // Editar desde el apartado cambia la pantalla del día
-await filaObjetivo('Cardio').locator('[data-accion="editar"]').click();
-await page.fill('#campo-nombre', 'Cardio matutino');
+await filaObjetivo('Pasos').locator('[data-accion="editar"]').click();
+await page.fill('#campo-nombre', 'Pasos del día');
 await page.click('#form-mision button[value="guardar"]');
 comprobar('editar desde el apartado renombra el objetivo',
-  await filaObjetivo('Cardio matutino').count() === 1);
+  await filaObjetivo('Pasos del día').count() === 1);
 await cerrarConfig();
 comprobar('el cambio se ve en la pantalla del día',
-  await mision('Cardio matutino').count() === 1);
+  await mision('Pasos del día').count() === 1);
 comprobar('el botón de volver cierra el apartado',
   await page.locator('#configuracion').isHidden());
 
@@ -554,6 +605,118 @@ const altoAMedias = await page.evaluate(() =>
 await aceptar();
 comprobar('la ventana no da saltos mientras se escribe', altoAlEmpezar === altoAMedias,
   `${altoAlEmpezar}px → ${altoAMedias}px`);
+
+/* ---------------- 20. dos carriles, cupos semanales y umbral ---------------- */
+
+await page.evaluate(() => localStorage.clear());
+await page.reload();
+await page.waitForSelector('.mision');
+await aceptar();
+
+// El umbral: cuatro de cinco diarias bastan para aprobar el día.
+const cincoDiarias = await page.locator('#lista-misiones .mision').all();
+for (const tarjeta of cincoDiarias.slice(0, 4)) {
+  const campo = tarjeta.locator('input[data-accion="fijar"]');
+  if (await campo.count()) { await campo.fill('99999'); await campo.dispatchEvent('change'); }
+  else await tarjeta.locator('[data-accion="alternar"]').click();
+}
+comprobar('cuatro de cinco son el 80 %',
+  await page.locator('#dia-porcentaje').textContent() === '80%');
+comprobar('con el 80 % ya se puede reclamar',
+  !(await page.locator('#btn-completar').isDisabled()));
+
+// Los cupos de la semana pagan al cerrarse, sin esperar al día
+const antesCupo = await leerEstado();
+await page.locator('#lista-semanales .mision', { hasText: 'Ciclismo' })
+  .locator('[data-accion="mas"]').click();
+await page.waitForTimeout(120);
+comprobar('cerrar un cupo semanal avisa', await titulo() === 'CUPO DE LA SEMANA CERRADO');
+await aceptar();
+const trasCupo = await leerEstado();
+comprobar('y paga en el momento', trasCupo.jugador.oro > antesCupo.jugador.oro);
+
+// Medianoche: lo diario vuelve a cero, el cupo semanal aguanta
+await escribirEstado({ dia: { ...trasCupo.dia, fecha: '2000-01-01' } });
+await page.reload();
+await page.waitForSelector('.mision');
+await aceptar();
+const traNoche = await leerEstado();
+comprobar('lo diario se reinicia cada noche',
+  traNoche.misiones.filter((m) => m.periodo === 'dia').every((m) => m.progreso === 0));
+comprobar('el cupo semanal aguanta la medianoche',
+  traNoche.misiones.find((m) => m.nombre === 'Ciclismo').progreso === 1);
+
+/* Tres de cinco personales (60 %): por debajo del umbral pero por encima del
+   50 %. Lo profesional se deja cumplido para que el único carril en juego sea
+   el personal. */
+const sinCastigo = { activo: false, aceptado: false, origen: null, area: null, desde: null, rachaPerdida: 0, mision: null };
+const diaDe = (fecha) => ({
+  fecha, semana: '2000-01-03',
+  completado: { personal: false, profesional: false },
+  xpGanada: { personal: 0, profesional: 0 },
+  avisado: true,
+});
+const cumplidas = (m) => ({ ...m, progreso: m.objetivo });
+const aCero = (m) => ({ ...m, progreso: 0 });
+const personalesDelDia = traNoche.misiones
+  .filter((m) => m.area === 'personal' && m.periodo === 'dia')
+  .map((m) => m.nombre);
+const tresPrimeras = personalesDelDia.slice(0, 3);
+
+await escribirEstado({
+  castigo: sinCastigo,
+  jugador: { ...traNoche.jugador, rachas: { personal: 4, profesional: 3 } },
+  misiones: traNoche.misiones.map((m) => (
+    m.area === 'profesional' || tresPrimeras.includes(m.nombre) ? cumplidas(m) : aCero(m)
+  )),
+  dia: diaDe('2000-01-02'),
+});
+await page.reload();
+await page.waitForSelector('.mision');
+const aMedias = await leerEstado();
+comprobar('el 60 % rompe la racha del carril', aMedias.jugador.rachas.personal === 0);
+comprobar('pero no cae castigo por un día a medias', aMedias.castigo.activo === false);
+// La racha sube al reclamar, no al cruzar el umbral: aquí lo que importa es
+// que el carril que llegó al umbral no pierda la suya.
+comprobar('y el carril que sí cumplió conserva la suya',
+  aMedias.jugador.rachas.profesional === 3);
+await aceptar();
+
+// Un día personal vacío sí: castigo, y del carril que falló
+await escribirEstado({
+  castigo: sinCastigo,
+  misiones: aMedias.misiones.map((m) => (m.area === 'profesional' ? cumplidas(m) : aCero(m))),
+  dia: diaDe('2000-01-04'),
+});
+await page.reload();
+await page.waitForSelector('.mision');
+const vacio = await leerEstado();
+comprobar('un día vacío sí trae castigo', vacio.castigo.activo === true);
+comprobar('el castigo es del carril personal', vacio.castigo.area === 'personal');
+comprobar('la penitencia es lo que se falló, a 1,5×',
+  vacio.castigo.mision.nombre === 'Penitencia: Pasos' && vacio.castigo.mision.objetivo === 12000,
+  `(${vacio.castigo.mision.nombre} ${vacio.castigo.mision.objetivo})`);
+await aceptar();
+
+/* ------------------ 21. un guardado antiguo sigue abriendo ------------------ */
+
+await page.evaluate(() => {
+  localStorage.setItem('sistema:v1', JSON.stringify({
+    version: 1,
+    jugador: { nombre: 'Viejo', nivel: 4, xp: 50, racha: 6, mejorRacha: 8, diasCompletados: 3 },
+    misiones: [{ id: 'm1', nombre: 'Flexiones', tipo: 'contador', objetivo: 100, unidad: 'reps', paso: 10, progreso: 30, xp: 40, stat: 'fuerza' }],
+    dia: { fecha: '2000-01-01', completado: false, xpGanada: 0, avisado: true },
+  }));
+});
+await page.reload();
+await page.waitForSelector('.mision');
+await aceptar();
+const antiguo = await leerEstado();
+comprobar('el guardado antiguo conserva el nivel', antiguo.jugador.nivel === 4);
+comprobar('su racha pasa a ser la personal', antiguo.jugador.mejoresRachas.personal === 8);
+comprobar('sus misiones pasan a ser personales y diarias',
+  antiguo.misiones.every((m) => m.area === 'personal' && m.periodo === 'dia'));
+comprobar('y se siguen viendo', await mision('Flexiones').count() === 1);
 
 
 console.log(ok.join('\n'));

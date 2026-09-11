@@ -45,8 +45,10 @@ export function estadoInicialJugador() {
     nivel: 1,
     xp: 0,
     puntosLibres: 0,
-    racha: 0,
-    mejorRacha: 0,
+    // Una racha por carril: no es lo mismo dejar de entrenar que dejar de
+    // escuchar a los clientes, y no tienen por qué romperse a la vez.
+    rachas: { personal: 0, profesional: 0 },
+    mejoresRachas: { personal: 0, profesional: 0 },
     diasCompletados: 0,
     stats,
     clase: null,
@@ -88,8 +90,16 @@ export function normalizarJugador(jugador) {
     nivel: Math.max(1, entero(datos.nivel, 1, 1)),
     xp: entero(datos.xp, 0, 0),
     puntosLibres: entero(datos.puntosLibres, 0, 0),
-    racha: entero(datos.racha, 0, 0),
-    mejorRacha: entero(datos.mejorRacha, 0, 0),
+    // Los guardados de antes traían una sola racha; como todas sus misiones
+    // pasan a ser personales, esa racha es la personal.
+    rachas: {
+      personal: entero(datos.rachas?.personal ?? datos.racha, 0, 0),
+      profesional: entero(datos.rachas?.profesional, 0, 0),
+    },
+    mejoresRachas: {
+      personal: entero(datos.mejoresRachas?.personal ?? datos.mejorRacha, 0, 0),
+      profesional: entero(datos.mejoresRachas?.profesional, 0, 0),
+    },
     diasCompletados: entero(datos.diasCompletados, 0, 0),
     stats,
     clase: CLASES.some((c) => c.id === datos.clase) ? datos.clase : null,
@@ -127,6 +137,17 @@ export function poderCombate(jugador) {
 }
 
 /** La fatiga sube al cumplir objetivos y se va al dormir. */
+export const racha = (jugador, area) => jugador.rachas[area] ?? 0;
+export const mejorRacha = (jugador) =>
+  Math.max(jugador.mejoresRachas.personal, jugador.mejoresRachas.profesional);
+
+/** Suma un día a la racha del carril y actualiza su marca. */
+export function sumarRacha(jugador, area) {
+  jugador.rachas[area] = racha(jugador, area) + 1;
+  jugador.mejoresRachas[area] = Math.max(jugador.mejoresRachas[area] ?? 0, jugador.rachas[area]);
+  return jugador.rachas[area];
+}
+
 export function sumarFatiga(jugador, cantidad) {
   jugador.fatiga = Math.min(100, Math.max(0, jugador.fatiga + cantidad));
 }

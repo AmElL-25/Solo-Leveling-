@@ -32,7 +32,7 @@ export const elJugador = {
   avisoPuntos: $('#aviso-puntos'),
 };
 
-export function renderVentanaEstado(jugador) {
+export function renderVentanaEstado(jugador, area = 'personal') {
   const necesaria = xpNecesaria(jugador.nivel);
 
   elJugador.nombre.textContent = jugador.nombre;
@@ -46,7 +46,8 @@ export function renderVentanaEstado(jugador) {
   elJugador.fatigaTexto.textContent = `${jugador.fatiga}`;
 
   elJugador.poder.textContent = poderCombate(jugador);
-  elJugador.racha.textContent = jugador.racha;
+  // La racha que se enseña es la del carril que estás mirando.
+  elJugador.racha.textContent = jugador.rachas[area] ?? 0;
   elJugador.dias.textContent = jugador.diasCompletados;
   elJugador.oro.textContent = jugador.oro;
   elJugador.puntosFicha.textContent = jugador.puntosLibres;

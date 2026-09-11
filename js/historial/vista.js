@@ -22,7 +22,9 @@ export function renderHistorial(estado) {
     const dia = registro.get(clave);
     const esHoy = i === 0;
     const porcentaje = esHoy ? Math.round(porcentajeDia(estado.misiones) * 100) : dia?.porcentaje ?? null;
-    const completado = esHoy ? estado.dia.completado : Boolean(dia?.completado);
+    const completado = esHoy
+      ? Object.values(estado.dia.completado).some(Boolean)
+      : Boolean(dia?.completado);
 
     let clase = 'dia';
     if (completado) clase += ' dia--ok';

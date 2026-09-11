@@ -129,19 +129,32 @@
         <button class="boton boton--primario" id="btn-completar" type="button" disabled>RECLAMAR RECOMPENSA</button>
       </div>
 
-      <!-- Jefe de la semana -->
-      <div class="panel__cabecera panel__cabecera--separada">
-        <h2 data-t="jefe">JEFE DE LA SEMANA</h2>
-        <span class="insignia" id="jefe-rango" hidden>RANGO E</span>
+      <!-- Cupos de la semana: los repartes en los días que puedas -->
+      <div id="seccion-semanales" hidden>
+        <div class="panel__cabecera panel__cabecera--separada">
+          <h2 data-t="cuposSemana">ESTA SEMANA</h2>
+          <span class="insignia" id="semana-cupos">0 / 0</span>
+        </div>
+        <div class="misiones" id="lista-semanales"></div>
       </div>
-      <div id="jefe"></div>
 
-      <!-- Puerta del día -->
-      <div class="panel__cabecera panel__cabecera--separada">
-        <h2 data-t="puerta">PUERTA</h2>
-        <span class="insignia" id="puerta-rango" hidden>RANGO E</span>
+      <!-- El otro carril, de un vistazo y a un toque -->
+      <button class="otro-carril" id="otro-carril" type="button" hidden></button>
+
+      <!-- El jefe y la puerta son retos del carril personal -->
+      <div id="retos-sistema">
+        <div class="panel__cabecera panel__cabecera--separada">
+          <h2 data-t="jefe">JEFE DE LA SEMANA</h2>
+          <span class="insignia" id="jefe-rango" hidden>RANGO E</span>
+        </div>
+        <div id="jefe"></div>
+
+        <div class="panel__cabecera panel__cabecera--separada">
+          <h2 data-t="puerta">PUERTA</h2>
+          <span class="insignia" id="puerta-rango" hidden>RANGO E</span>
+        </div>
+        <div id="puerta"></div>
       </div>
-      <div id="puerta"></div>
     </section>
 
     <!-- ------------------------------ ESTADO ------------------------------ -->
@@ -295,6 +308,21 @@
     <label>Nombre
       <input type="text" id="campo-nombre" maxlength="40" required placeholder="Leer, meditar, correr…">
     </label>
+
+    <div class="fila-campos">
+      <label>Carril
+        <select id="campo-area">
+          <option value="personal">Personal — cuerpo y cabeza</option>
+          <option value="profesional">Profesional — el oficio</option>
+        </select>
+      </label>
+      <label>Cada
+        <select id="campo-periodo">
+          <option value="dia">Día</option>
+          <option value="semana">Semana (cupo)</option>
+        </select>
+      </label>
+    </div>
 
     <label>Tipo
       <select id="campo-tipo">

@@ -78,10 +78,12 @@ export function usar(estado, objetoId, aleatorio = Math.random) {
     }
     case 'pergamino_perdon': {
       if (!estado.castigo.activo) return null;
-      jugador.racha = estado.castigo.rachaPerdida;
-      jugador.mejorRacha = Math.max(jugador.mejorRacha, jugador.racha);
+      const area = estado.castigo.area ?? 'personal';
+      const devuelta = estado.castigo.rachaPerdida;
+      jugador.rachas[area] = devuelta;
+      jugador.mejoresRachas[area] = Math.max(jugador.mejoresRachas[area] ?? 0, devuelta);
       estado.castigo = estadoInicialCastigo();
-      mensaje = `Penalización anulada. Racha recuperada: ${jugador.racha} días.`;
+      mensaje = `Penalización anulada. Racha recuperada: ${devuelta} días.`;
       break;
     }
     default:

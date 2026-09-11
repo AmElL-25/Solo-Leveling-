@@ -12,6 +12,8 @@ import { estadoInicialDia, normalizarDia } from './ciclo-diario/reglas.js';
 import { estadoInicialCastigo, normalizarCastigo } from './castigo/reglas.js';
 import { normalizarPuerta } from './puertas/reglas.js';
 import { normalizarJefe } from './jefes/reglas.js';
+import { normalizarIncursion } from './incursion/reglas.js';
+import { estadoInicialMedidas, normalizarMedidas } from './medidas/reglas.js';
 import {
   inventarioInicial, normalizarInventario, estadoInicialEfectos, normalizarEfectos,
 } from './tienda/reglas.js';
@@ -29,6 +31,8 @@ export function estadoInicial() {
     misiones: misionesIniciales(),
     puerta: null,
     jefe: null,
+    incursion: null,
+    medidas: estadoInicialMedidas(),
     dia: estadoInicialDia(),
     castigo: estadoInicialCastigo(),
     inventario: inventarioInicial(),
@@ -57,6 +61,8 @@ export function normalizar(datos) {
     misiones,
     puerta: normalizarPuerta(datos.puerta),
     jefe: normalizarJefe(datos.jefe),
+    incursion: normalizarIncursion(datos.incursion),
+    medidas: normalizarMedidas(datos.medidas),
     dia: normalizarDia(datos.dia),
     castigo: normalizarCastigo(datos.castigo),
     inventario: normalizarInventario(datos.inventario),

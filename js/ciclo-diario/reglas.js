@@ -13,7 +13,8 @@ import { fechaHoy, diasEntre, lunesDeLaSemana } from '../nucleo/fecha.js';
 import { otorgarXp, xpNecesaria, vidaMaxima, vidaActual, sumarRacha } from '../jugador/reglas.js';
 import {
   diaCompleto, porcentajeDia, misionCompleta, diarias, semanales,
-  delArea, obligatorias, carrilesActivos, UMBRAL_CUMPLIDO, UMBRAL_CASTIGO,
+  delArea, obligatorias, carrilesActivos, anotarCumplimiento, revisarObjetivos,
+  UMBRAL_CUMPLIDO, UMBRAL_CASTIGO,
 } from '../misiones/reglas.js';
 import { registrarDia } from '../historial/reglas.js';
 import { multiplicadorXp, oroPorXp } from '../recompensas/reglas.js';
@@ -203,6 +204,7 @@ export function sincronizarDia(estado, hoy = fechaHoy(), aleatorio = Math.random
     balances,
     dias: diasEntre(anterior.fecha, hoy),
     semanaNueva: false,
+    objetivos: [],
     puerta: null,
     jefe: null,
     castigo: balances.find((b) => b.castigo)?.castigo ?? null,
@@ -216,13 +218,19 @@ export function sincronizarDia(estado, hoy = fechaHoy(), aleatorio = Math.random
     indicadores: indicadoresDelDia(estado.misiones),
   });
 
-  // Lo diario vuelve a cero cada noche; lo semanal, solo al cambiar el lunes.
-  for (const mision of diarias(estado.misiones)) mision.progreso = 0;
+  // Se anota antes de borrar nada: es lo que alimenta la revisión del lunes.
+  anotarCumplimiento(estado.misiones);
 
   const semana = lunesDeLaSemana(hoy);
   if (semana !== anterior.semana) {
-    for (const mision of semanales(estado.misiones)) mision.progreso = 0;
+    resumen.objetivos = revisarObjetivos(estado.misiones);
     resumen.semanaNueva = true;
+  }
+
+  // Lo diario vuelve a cero cada noche; lo semanal, solo al cambiar el lunes.
+  for (const mision of diarias(estado.misiones)) mision.progreso = 0;
+  if (resumen.semanaNueva) {
+    for (const mision of semanales(estado.misiones)) mision.progreso = 0;
   }
 
   estado.jugador.fatiga = 0;

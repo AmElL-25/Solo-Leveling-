@@ -9,10 +9,12 @@ const $ = (selector) => document.querySelector(selector);
 export const elAjustes = {
   sonido: $('#ajuste-sonido'),
   animaciones: $('#ajuste-animaciones'),
+  verPeso: $('#ajuste-ver-peso'),
   horario: $('#ajuste-horario'),
   desde: $('#ajuste-desde'),
   hasta: $('#ajuste-hasta'),
   dias: $('#ajuste-dias'),
+  ascenso: $('#ajuste-ascenso'),
   cuotaObjetivo: $('#ajuste-cuota'),
   cuotaMoneda: $('#ajuste-moneda'),
   btnExportar: $('#btn-exportar'),
@@ -27,6 +29,7 @@ export function renderAjustes(estado) {
   const { ajustes } = estado;
   elAjustes.sonido.checked = ajustes.sonido;
   elAjustes.animaciones.checked = ajustes.animaciones;
+  elAjustes.verPeso.checked = ajustes.verPeso;
   elAjustes.horario.checked = ajustes.horario.activo;
   if (document.activeElement !== elAjustes.desde) elAjustes.desde.value = ajustes.horario.desde;
   if (document.activeElement !== elAjustes.hasta) elAjustes.hasta.value = ajustes.horario.hasta;
@@ -36,6 +39,9 @@ export function renderAjustes(estado) {
       ${letra}
     </button>`).join('');
   // Solo se reescriben si el jugador no los está editando en ese momento.
+  if (document.activeElement !== elAjustes.ascenso) {
+    elAjustes.ascenso.value = estado.incursion?.fecha ?? '';
+  }
   if (document.activeElement !== elAjustes.cuotaObjetivo) {
     elAjustes.cuotaObjetivo.value = estado.cuota.objetivo || '';
   }

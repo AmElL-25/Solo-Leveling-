@@ -42,6 +42,11 @@ export function misionesDePlantilla(id) {
     opcional: Boolean(m.opcional),
     area: esArea(m.area) ? m.area : AREA_INICIAL,
     periodo: m.periodo === 'semana' ? 'semana' : 'dia',
+    medida: m.medida === 'peso' ? 'peso' : null,
+    objetivoBase: m.tipo === 'checkbox' ? 1 : m.objetivo,
+    cumplidos: 0,
+    buenas: 0,
+    malas: 0,
   }));
 }
 
@@ -90,6 +95,13 @@ export function normalizarMision(mision) {
     // personales y diarias, que es justo lo que dicen estos valores.
     area: esArea(mision.area) ? mision.area : AREA_INICIAL,
     periodo: mision.periodo === 'semana' ? 'semana' : 'dia',
+    // Algunas misiones piden un dato además de marcarse: el pesaje, el peso.
+    medida: mision.medida === 'peso' ? 'peso' : null,
+    // Memoria para que el objetivo siga al que lo cumple (ver revisarObjetivos).
+    objetivoBase: Math.max(0.5, dec(mision.objetivoBase ?? objetivo, objetivo, 0.5)),
+    cumplidos: entero(mision.cumplidos, 0, 0),
+    buenas: entero(mision.buenas, 0, 0),
+    malas: entero(mision.malas, 0, 0),
   };
 }
 
@@ -143,6 +155,77 @@ export function diaCompleto(misiones, area, umbral = UMBRAL_CUMPLIDO) {
 /** Carriles que hoy tienen algo que hacer; los vacíos no se juzgan. */
 export function carrilesActivos(misiones) {
   return AREAS.filter((area) => diarias(obligatorias(delArea(misiones, area))).length > 0);
+}
+
+/* -------------------- el objetivo sigue al que lo cumple -------------------- */
+
+/* Días de la semana que hay que cumplir una diaria para considerarla holgada,
+   y por debajo de cuántos se considera que aprieta demasiado. */
+const DIAS_HOLGADA = 6;
+const DIAS_FLOJA = 3;
+/* Dos semanas seguidas antes de mover nada: una buena racha puede ser suerte. */
+const SEMANAS_SEGUIDAS = 2;
+/* Nunca más del triple de lo que se puso al principio, ni menos de un paso. */
+const TECHO = 3;
+
+/** Al cerrar el día, anota qué objetivos se cumplieron. */
+export function anotarCumplimiento(misiones) {
+  for (const mision of diarias(misiones)) {
+    if (misionCompleta(mision)) mision.cumplidos += 1;
+  }
+}
+
+const mueve = (mision, sentido) => {
+  if (mision.tipo === 'checkbox') return null;   // un sí/no no tiene escalones
+  const techo = mision.objetivoBase * TECHO;
+  const suelo = Math.max(mision.paso, mision.objetivoBase / 2);
+  const nuevo = Math.round((mision.objetivo + mision.paso * sentido) * 100) / 100;
+  const limitado = Math.min(techo, Math.max(suelo, nuevo));
+  if (limitado === mision.objetivo) return null;
+
+  const antes = mision.objetivo;
+  mision.objetivo = limitado;
+  if (mision.progreso > limitado && !mision.opcional) mision.progreso = limitado;
+  return { nombre: mision.nombre, antes, ahora: limitado, unidad: mision.unidad };
+};
+
+/**
+ * Revisión de los lunes. Si un objetivo se cumple con holgura dos semanas
+ * seguidas, sube un escalón; si aprieta dos seguidas, baja. Así los 8.000
+ * pasos de hoy son otros en dos meses sin que nadie los toque a mano.
+ * Devuelve la lista de cambios para poder avisar.
+ */
+export function revisarObjetivos(misiones) {
+  const cambios = [];
+
+  for (const mision of misiones) {
+    if (mision.opcional) continue;
+
+    const bien = mision.periodo === 'semana'
+      ? misionCompleta(mision)
+      : mision.cumplidos >= DIAS_HOLGADA;
+    const mal = mision.periodo === 'semana'
+      ? mision.progreso < mision.objetivo / 2
+      : mision.cumplidos <= DIAS_FLOJA;
+
+    if (bien) { mision.buenas += 1; mision.malas = 0; }
+    else if (mal) { mision.malas += 1; mision.buenas = 0; }
+    else { mision.buenas = 0; mision.malas = 0; }
+
+    if (mision.buenas >= SEMANAS_SEGUIDAS) {
+      mision.buenas = 0;
+      const cambio = mueve(mision, 1);
+      if (cambio) cambios.push({ ...cambio, sentido: 'sube' });
+    } else if (mision.malas >= SEMANAS_SEGUIDAS) {
+      mision.malas = 0;
+      const cambio = mueve(mision, -1);
+      if (cambio) cambios.push({ ...cambio, sentido: 'baja' });
+    }
+
+    mision.cumplidos = 0;
+  }
+
+  return cambios;
 }
 
 export function ajustarProgreso(misiones, id, delta) {

@@ -698,7 +698,160 @@ comprobar('la penitencia es lo que se falló, a 1,5×',
   `(${vacio.castigo.mision.nombre} ${vacio.castigo.mision.objetivo})`);
 await aceptar();
 
-/* ------------------ 21. un guardado antiguo sigue abriendo ------------------ */
+/* --------------------- 21. la incursión: EL ASCENSO --------------------- */
+
+await page.evaluate(() => localStorage.clear());
+await page.reload();
+await page.waitForSelector('.mision');
+await aceptar();
+
+const conIncursion = await leerEstado();
+comprobar('la incursión se abre sola', Boolean(conIncursion.incursion));
+comprobar('con fecha a dos meses vista', (() => {
+  const d = new Date();
+  d.setMonth(d.getMonth() + 2);
+  return conIncursion.incursion.fecha === d.toISOString().slice(0, 10);
+})(), `(${conIncursion.incursion?.fecha})`);
+comprobar('su vida es la temporada entera de lo profesional',
+  conIncursion.incursion.vidaMaxima > 1000, `(${conIncursion.incursion?.vidaMaxima})`);
+
+comprobar('en el carril personal no se ve', await page.locator('#seccion-incursion').isHidden());
+await cambiarCarril();
+comprobar('en SALES sí', await page.locator('#seccion-incursion').isVisible());
+comprobar('y el jefe no', await page.locator('#retos-sistema').isHidden());
+comprobar('enseña el plazo en días',
+  /\d+ días/.test(await page.locator('#incursion-plazo').textContent()));
+
+// Cerrar un cupo profesional le hace daño
+const vidaIncursion = conIncursion.incursion.vida;
+await page.locator('#lista-semanales .mision', { hasText: 'Aplicar una idea' })
+  .locator('[data-accion="mas"]').click();
+await page.waitForTimeout(150);
+await aceptar();
+comprobar('un cupo profesional avanza la preparación',
+  (await leerEstado()).incursion.vida < vidaIncursion,
+  `(${vidaIncursion} → ${(await leerEstado()).incursion.vida})`);
+
+// La fecha se cambia desde la configuración
+await abrirConfig();
+await page.fill('#ajuste-ascenso', '2026-12-01');
+await page.locator('#ajuste-ascenso').dispatchEvent('change');
+await page.waitForTimeout(150);
+await aceptar();
+await cerrarConfig();
+comprobar('la fecha se puede fijar a mano', (await leerEstado()).incursion.fecha === '2026-12-01');
+comprobar('cambiar la fecha no borra lo ya hecho',
+  (await leerEstado()).incursion.vida < (await leerEstado()).incursion.vidaMaxima);
+
+// Al llegar el día, balance sin castigo. Se vuelve al carril del Sistema
+// porque en SALES los avisos son barras flotantes, no ventana.
+await cambiarCarril();
+await escribirEstado({
+  incursion: { ...(await leerEstado()).incursion, fecha: '2000-01-01' },
+  dia: { fecha: '1999-12-30', semana: '1999-12-27', completado: { personal: true, profesional: true }, xpGanada: { personal: 0, profesional: 0 }, avisado: true },
+});
+await page.reload();
+await page.waitForSelector('.mision');
+comprobar('al llegar la fecha se entrega el balance', await buscarAviso('SE ACABÓ EL PLAZO'));
+await aceptar();
+const cerrada = await leerEstado();
+comprobar('la incursión queda cerrada', cerrada.incursion.cerrada === true);
+comprobar('y no cae castigo por el plazo', cerrada.castigo.origen !== 'incursion');
+
+/* ------------- 22. el peso por dentro y el objetivo que crece ------------- */
+
+await page.evaluate(() => localStorage.clear());
+await page.reload();
+await page.waitForSelector('.mision');
+await aceptar();
+
+comprobar('la ficha empieza sin pesar',
+  (await page.locator('#peso-tendencia').textContent()).includes('sin pesar'));
+
+// Marcar el pesaje pide el peso, lo guarda y no lo enseña
+page.once('dialog', (d) => d.accept('98.4'));
+await page.locator('#lista-semanales .mision', { hasText: 'Pesaje' })
+  .locator('[data-accion="mas"]').click();
+await page.waitForTimeout(200);
+await aceptar();
+const conPeso = await leerEstado();
+comprobar('el pesaje guarda el peso', conPeso.medidas.pesajes.at(-1)?.kg === 98.4);
+comprobar('pero el número no sale en pantalla',
+  !(await page.locator('#peso-tendencia').textContent()).includes('98.4'));
+
+// Con dos pesajes ya hay tendencia, y sigue sin verse el kilo
+await escribirEstado({
+  medidas: { pesajes: [{ fecha: '2026-01-01', kg: 100 }, { fecha: '2026-01-08', kg: 98.4 }] },
+});
+await page.reload();
+await page.waitForSelector('.mision');
+await aceptar();
+const filaPeso = await page.locator('#peso-tendencia').textContent();
+comprobar('la ficha enseña la tendencia', filaPeso.includes('bajando'), `(${filaPeso.trim()})`);
+comprobar('y sigue sin enseñar kilos', !filaPeso.includes('98.4'));
+
+// Quien quiera el número, lo pide
+await abrirConfig();
+await page.click('#ajuste-ver-peso');
+await page.waitForTimeout(120);
+await cerrarConfig();
+comprobar('se puede pedir ver el número',
+  (await page.locator('#peso-tendencia').textContent()).includes('98.4'));
+
+// El objetivo sigue al que lo cumple: dos semanas holgadas y sube
+const crecido = await page.evaluate(async () => {
+  const { revisarObjetivos } = await import('/js/misiones/reglas.js');
+  const pasos = {
+    id: 'x', nombre: 'Pasos', tipo: 'contador', objetivo: 8000, objetivoBase: 8000,
+    unidad: 'pasos', paso: 1000, progreso: 0, xp: 45, stat: 'agilidad',
+    area: 'personal', periodo: 'dia', opcional: false, cumplidos: 7, buenas: 0, malas: 0,
+  };
+  const primera = revisarObjetivos([pasos]);
+  pasos.cumplidos = 7;
+  const segunda = revisarObjetivos([pasos]);
+  return { primera: primera.length, segunda, objetivo: pasos.objetivo };
+});
+comprobar('una semana holgada todavía no mueve nada', crecido.primera === 0);
+comprobar('dos seguidas suben el objetivo un escalón',
+  crecido.objetivo === 9000 && crecido.segunda[0]?.sentido === 'sube',
+  `(${crecido.objetivo})`);
+
+// Y baja igual de fácil si aprieta
+const bajado = await page.evaluate(async () => {
+  const { revisarObjetivos } = await import('/js/misiones/reglas.js');
+  const pasos = {
+    id: 'x', nombre: 'Pasos', tipo: 'contador', objetivo: 8000, objetivoBase: 8000,
+    unidad: 'pasos', paso: 1000, progreso: 0, xp: 45, stat: 'agilidad',
+    area: 'personal', periodo: 'dia', opcional: false, cumplidos: 1, buenas: 0, malas: 0,
+  };
+  revisarObjetivos([pasos]);
+  pasos.cumplidos = 1;
+  revisarObjetivos([pasos]);
+  return pasos.objetivo;
+});
+comprobar('dos semanas flojas lo bajan', bajado === 7000, `(${bajado})`);
+
+// Nunca se dispara ni desaparece
+const topes = await page.evaluate(async () => {
+  const { revisarObjetivos } = await import('/js/misiones/reglas.js');
+  const arriba = {
+    id: 'a', nombre: 'Tope', tipo: 'contador', objetivo: 24000, objetivoBase: 8000,
+    unidad: 'pasos', paso: 1000, progreso: 24000, xp: 45, stat: 'agilidad',
+    area: 'personal', periodo: 'dia', opcional: false, cumplidos: 7, buenas: 1, malas: 0,
+  };
+  revisarObjetivos([arriba]);
+  const abajo = {
+    id: 'b', nombre: 'Suelo', tipo: 'contador', objetivo: 4000, objetivoBase: 8000,
+    unidad: 'pasos', paso: 1000, progreso: 0, xp: 45, stat: 'agilidad',
+    area: 'personal', periodo: 'dia', opcional: false, cumplidos: 0, buenas: 0, malas: 1,
+  };
+  revisarObjetivos([abajo]);
+  return { arriba: arriba.objetivo, abajo: abajo.objetivo };
+});
+comprobar('no pasa del triple de lo que se puso', topes.arriba === 24000, `(${topes.arriba})`);
+comprobar('ni baja de la mitad', topes.abajo === 4000, `(${topes.abajo})`);
+
+/* ------------------ 23. un guardado antiguo sigue abriendo ------------------ */
 
 await page.evaluate(() => {
   localStorage.setItem('sistema:v1', JSON.stringify({

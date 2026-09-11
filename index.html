@@ -66,6 +66,7 @@
       <p class="ficha__dato"><span data-t="fichaFatiga">FATIGA:</span><strong id="fatiga-texto">0</strong></p>
       <p class="ficha__dato ficha__dato--ancho"><span data-t="fichaTitulo">TÍTULO:</span><strong id="titulo-equipado">Sin título</strong></p>
       <p class="ficha__dato ficha__dato--ancho"><span>HP:</span><strong id="hp-texto">0/0</strong></p>
+      <p class="ficha__dato ficha__dato--ancho" id="peso-tendencia"><span>PESO:</span><strong>sin pesar</strong></p>
     </div>
 
     <div class="regla"></div>
@@ -136,6 +137,15 @@
           <span class="insignia" id="semana-cupos">0 / 0</span>
         </div>
         <div class="misiones" id="lista-semanales"></div>
+      </div>
+
+      <!-- La incursión: el reto del carril profesional, con fecha real -->
+      <div id="seccion-incursion" hidden>
+        <div class="panel__cabecera panel__cabecera--separada">
+          <h2 data-t="incursion">LA INCURSIÓN</h2>
+          <span class="insignia" id="incursion-plazo" hidden>61 días</span>
+        </div>
+        <div id="incursion"></div>
       </div>
 
       <!-- El otro carril, de un vistazo y a un toque -->
@@ -256,6 +266,10 @@
         <input type="checkbox" id="ajuste-animaciones">
         <span>Texto con efecto de escritura</span>
       </label>
+      <label class="opcion">
+        <input type="checkbox" id="ajuste-ver-peso">
+        <span>Ver el peso en kilos (por defecto solo la tendencia)</span>
+      </label>
       <div class="panel__cabecera panel__cabecera--separada"><h2>MODO AUTOMÁTICO</h2></div>
       <p class="tenue">En tu horario laboral la app se pone en modo SALES sola. El botón de la
         cabecera manda hasta el siguiente tramo.</p>
@@ -272,6 +286,13 @@
         </label>
       </div>
       <div class="dias" id="ajuste-dias"></div>
+
+      <div class="panel__cabecera panel__cabecera--separada"><h2>EL ASCENSO</h2></div>
+      <p class="tenue">La fecha de tu ascenso. La incursión del carril profesional mide lo que
+        haces de aquí a ese día.</p>
+      <label>Fecha
+        <input type="date" id="ajuste-ascenso">
+      </label>
 
       <div class="panel__cabecera panel__cabecera--separada"><h2>CUOTA DEL MES</h2></div>
       <p class="tenue">Tu objetivo de facturación mensual. El cuadro de mando calcula lo que

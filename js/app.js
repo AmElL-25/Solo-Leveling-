@@ -47,6 +47,13 @@ import { elPuertas, renderPuerta } from './puertas/vista.js';
 
 import { revisarSemana, golpear, danoPorMision } from './jefes/reglas.js';
 import { renderJefe } from './jefes/vista.js';
+import {
+  crearIncursion, fijarFecha, golpearIncursion, revisarIncursion,
+  xpDiariaProfesional,
+} from './incursion/reglas.js';
+import { elIncursion, renderIncursion } from './incursion/vista.js';
+import { registrarPeso, ultimoPeso } from './medidas/reglas.js';
+import { renderPeso } from './medidas/vista.js';
 
 import { revisarTitulos, equiparTitulo } from './titulos/reglas.js';
 import { elTitulos, renderTitulos } from './titulos/vista.js';
@@ -98,7 +105,10 @@ function render() {
   // El jefe y la puerta son del carril personal: en el profesional no pintan
   // nada hasta que llegue su propia incursión.
   document.querySelector('#retos-sistema').hidden = area !== 'personal';
+  elIncursion.seccion.hidden = area !== 'profesional';
   renderJefe(estado.jefe, estado.castigo.activo);
+  renderIncursion(estado.incursion);
+  renderPeso(estado, estado.ajustes.verPeso);
   renderTitulos(estado.jugador);
   renderClase(estado.jugador);
   renderTienda(estado);
@@ -308,7 +318,22 @@ function comprobarDia() {
 }
 
 /** Avisos que van detrás de la misión diaria: primero lo de hoy, luego lo demás. */
+function avisarObjetivos(cambios) {
+  if (!cambios?.length) return;
+  notificar({
+    titulo: t('notiObjetivos'),
+    lineas: cambios.slice(0, 5).map((c) => ({
+      texto: `${c.nombre}: ${c.antes} → ${c.ahora} ${c.unidad}`.trim(),
+      destacado: c.sentido === 'sube',
+    })),
+    boton: 'ENTENDIDO',
+  });
+  pitido('nivel');
+}
+
 function avisarNovedades(resumen) {
+  avisarObjetivos(resumen?.objetivos);
+  avisarPlazo(revisarIncursion(estado));
   if (resumen?.puerta) avisarPuerta(resumen.puerta);
   avisarCastigo(resumen?.castigo);
   avisarSemana(resumen?.jefe ?? revisarSemana(estado));
@@ -370,11 +395,64 @@ function cobrarCupoSemanal(mision) {
   });
   pitido('logro');
   avisarNivel({ niveles, nivelPrevio, nivel: estado.jugador.nivel });
+  if (mision.area === 'profesional') avisarIncursion(golpearIncursion(estado, mision.xp));
+}
+
+function avisarIncursion(caida) {
+  if (!caida) return;
+  notificar({
+    titulo: t('notiIncursion'),
+    lineas: [
+      { texto: caida.nombre, destacado: true },
+      { texto: `Llegas listo con ${caida.dias} ${caida.dias === 1 ? 'día' : 'días'} de margen.` },
+      { texto: 'La fecha sigue siendo la que es; el que ya no es el mismo eres tú.' },
+    ],
+    boton: 'RECIBIR',
+  });
+  pitido('jefe');
+}
+
+function avisarPlazo(balance) {
+  if (!balance) return;
+  notificar({
+    titulo: t('notiPlazo'),
+    lineas: [
+      { texto: `${balance.nombre} — ${balance.fecha}`, destacado: true },
+      { texto: `Llegaste al ${balance.porcentaje} % de la preparación.` },
+      { texto: 'Sin castigo: esta fecha no la decide el Sistema.' },
+    ],
+    boton: 'ENTENDIDO',
+  });
+  pitido('aviso');
 }
 
 /* Los cupos de la semana se pintan en su propia lista, así que los mismos
    controles tienen que escucharse en las dos. */
 const listasDeMisiones = [elMisiones.lista, elMisiones.semanales];
+
+/**
+ * Hay misiones que además de marcarse piden un dato. El pesaje pide el peso:
+ * se guarda, pero no se enseña — en la ficha solo sale la tendencia.
+ * Devuelve false si se canceló, para no marcar la misión.
+ */
+function pedirMedida(mision) {
+  if (mision.medida !== 'peso') return true;
+
+  const previo = ultimoPeso(estado.medidas);
+  const puesto = prompt('Peso de hoy en kilos:', previo ? String(previo.kg) : '');
+  if (puesto === null) return false;
+
+  const kg = Number(String(puesto).replace(',', '.'));
+  if (!registrarPeso(estado, kg)) {
+    notificar({
+      titulo: 'PESO NO VÁLIDO',
+      lineas: [{ texto: 'Escribe el peso en kilos, por ejemplo 98.4.' }],
+      tipo: 'peligro',
+    });
+    return false;
+  }
+  return true;
+}
 
 const alPulsarMision = (evento) => {
   const boton = evento.target.closest('button[data-accion]');
@@ -386,6 +464,7 @@ const alPulsarMision = (evento) => {
 
   switch (boton.dataset.accion) {
     case 'mas':
+      if (!pedirMedida(mision)) return;
       pitido('toque');
       resolverObjetivo(id, () => ajustarProgreso(estado.misiones, id, mision.paso));
       break;
@@ -470,6 +549,13 @@ elMisiones.formMision.addEventListener('submit', (evento) => {
 elCicloDiario.btnCompletar.addEventListener('click', () => {
   const resultado = completarDia(estado, carril());
   if (!resultado) return;
+
+  // Un día profesional cerrado avanza la preparación del ascenso. Se usa la
+  // experiencia limpia, sin bonificaciones: así cumplir cada día de aquí a la
+  // fecha deja la incursión justo en cero.
+  if (resultado.area === 'profesional') {
+    avisarIncursion(golpearIncursion(estado, xpDiariaProfesional(estado.misiones)));
+  }
 
   const lineas = [
     { texto: `+${resultado.base} XP por los objetivos.` },
@@ -784,6 +870,25 @@ for (const campo of [elAjustes.cuotaObjetivo, elAjustes.cuotaMoneda]) {
   });
 }
 
+elAjustes.verPeso.addEventListener('change', () => {
+  estado.ajustes.verPeso = elAjustes.verPeso.checked;
+  actualizar();
+  pitido('guardar');
+});
+
+elAjustes.ascenso.addEventListener('change', () => {
+  if (!fijarFecha(estado, elAjustes.ascenso.value)) return;
+  notificar({
+    titulo: t('incursion'),
+    lineas: [
+      { texto: `El ascenso queda fijado para el ${estado.incursion.fecha}.`, destacado: true },
+      { texto: 'La incursión mide lo que hagas de aquí a ese día.' },
+    ],
+  });
+  pitido('guardar');
+  actualizar();
+});
+
 elAjustes.btnExportar.addEventListener('click', () => {
   const blob = new Blob([exportar(estado)], { type: 'application/json' });
   const enlace = document.createElement('a');
@@ -859,6 +964,9 @@ document.addEventListener('pointerdown', despertarSonido, { once: true });
 document.addEventListener('keydown', despertarSonido, { once: true });
 
 sincronizarModo();
+// La primera vez se abre la incursión sola, a dos meses vista. La fecha se
+// cambia en la configuración en cuanto se sepa la de verdad.
+if (!estado.incursion) estado.incursion = crearIncursion(estado);
 const resumenInicial = comprobarDia();
 avisarTitulos(revisarTitulos(estado));
 avisarMisionDiaria();

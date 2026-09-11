@@ -36,6 +36,26 @@ export const TERMINOS = {
   reclamar:       { sistema: 'RECLAMAR RECOMPENSA', sales: 'CERRAR EL DÍA' },
   reclamado:      { sistema: 'MISIÓN DIARIA COMPLETADA', sales: 'DÍA CERRADO' },
   cuposSemana:    { sistema: 'ESTA SEMANA', sales: 'ESTA SEMANA' },
+  incursion:      { sistema: 'LA INCURSIÓN', sales: 'EL ASCENSO' },
+  incursionViva: {
+    sistema: 'Cada día que cierras aquí le quita vida. Los cupos de la semana pegan de más.',
+    sales: 'Cada día cerrado suma preparación. Los cupos de la semana suman de más.',
+  },
+  incursionGanada: {
+    sistema: 'Incursión superada. Llegas listo al día.',
+    sales: 'Preparación completada antes de la fecha.',
+  },
+  incursionCerrada: {
+    sistema: 'Se acabó el plazo. La fecha no la decide el Sistema.',
+    sales: 'Plazo cumplido. Este es el balance de la preparación.',
+  },
+  incursionSinFecha: {
+    sistema: 'Sin fecha fijada. Ponla en la configuración y empezará la cuenta atrás.',
+    sales: 'Sin fecha fijada. Ponla en la configuración y empezará la cuenta atrás.',
+  },
+  notiIncursion:  { sistema: 'INCURSIÓN SUPERADA', sales: 'PREPARACIÓN COMPLETADA' },
+  notiPlazo:      { sistema: 'SE ACABÓ EL PLAZO', sales: 'PLAZO CUMPLIDO' },
+  notiObjetivos:  { sistema: 'EL SISTEMA SUBE EL LISTÓN', sales: 'OBJETIVOS AJUSTADOS' },
   notiCupo:       { sistema: 'CUPO DE LA SEMANA CERRADO', sales: 'CUPO SEMANAL COMPLETADO' },
   nuevaMision:    { sistema: '＋ NUEVA MISIÓN', sales: '＋ NUEVO OBJETIVO' },
   dlgNueva:       { sistema: 'NUEVA MISIÓN', sales: 'NUEVO OBJETIVO' },

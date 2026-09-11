@@ -17,7 +17,7 @@ export const PLANTILLAS = [
       { nombre: 'Diario del estoico', tipo: 'checkbox', xp: 25, stat: 'percepcion', area: 'personal' },
       { nombre: 'Fuerza', tipo: 'contador', objetivo: 3, unidad: 'sesiones', paso: 1, xp: 90, stat: 'fuerza', area: 'personal', periodo: 'semana' },
       { nombre: 'Ciclismo', tipo: 'contador', objetivo: 1, unidad: 'salidas', paso: 1, xp: 70, stat: 'agilidad', area: 'personal', periodo: 'semana' },
-      { nombre: 'Pesaje', tipo: 'contador', objetivo: 1, unidad: 'pesajes', paso: 1, xp: 20, stat: 'vitalidad', area: 'personal', periodo: 'semana' },
+      { nombre: 'Pesaje', tipo: 'contador', objetivo: 1, unidad: 'pesajes', paso: 1, xp: 20, stat: 'vitalidad', area: 'personal', periodo: 'semana', medida: 'peso' },
 
       /* --- SALES: el oficio -------------------------------------------- */
       { nombre: 'Escucha en llamada', tipo: 'contador', objetivo: 1, unidad: 'notas', paso: 1, xp: 40, stat: 'percepcion', area: 'profesional', indicador: 'contactos' },

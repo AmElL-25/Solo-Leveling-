@@ -924,6 +924,33 @@ body[data-modo="sales"] .escribiendo::after { display: none; }
 }
 
 
+.peso--baja strong { color: var(--verde); }
+.peso--sube strong { color: var(--rojo); }
+
+/* -------------------------------- incursión -------------------------------- */
+
+.incursion {
+  border: 1px solid rgba(255, 212, 121, 0.45);
+  border-radius: var(--radio);
+  background: linear-gradient(180deg, rgba(138, 106, 31, 0.2), rgba(4, 12, 24, 0.55));
+  padding: 12px;
+  box-shadow: inset 0 0 30px rgba(255, 212, 121, 0.1);
+}
+.incursion .puerta__cabecera h3 { color: var(--dorado); }
+.incursion--cerrada { border-color: rgba(69, 224, 160, 0.5); background: rgba(20, 60, 48, 0.25); box-shadow: none; }
+.incursion--cerrada .puerta__cabecera h3 { color: var(--verde); }
+.puerta__sello--incursion {
+  color: var(--dorado);
+  border-color: rgba(255, 212, 121, 0.6);
+  text-shadow: 0 0 12px rgba(255, 212, 121, 0.5);
+}
+.incursion--cerrada .puerta__sello--incursion { color: var(--verde); border-color: rgba(69, 224, 160, 0.6); text-shadow: none; }
+.barra--incursion .barra__relleno {
+  background: linear-gradient(90deg, #8a6a1f, var(--dorado));
+  box-shadow: 0 0 14px rgba(255, 212, 121, 0.35);
+}
+.incursion--cerrada .barra--incursion .barra__relleno { background: linear-gradient(90deg, #17624f, var(--verde)); }
+
 /* ---------------------- el otro carril, de un vistazo ---------------------- */
 
 .otro-carril {

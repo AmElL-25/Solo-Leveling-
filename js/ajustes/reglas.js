@@ -11,6 +11,8 @@ export function estadoInicialAjustes() {
     animaciones: true,
     // Qué parte del día hay que cumplir para que cuente. Perfección no.
     umbral: 0.8,
+    // El peso se maneja por dentro salvo que se pida lo contrario.
+    verPeso: false,
     modo: 'sistema',
     horario: estadoInicialHorario(),
     forzado: null,
@@ -24,6 +26,7 @@ export function normalizarAjustes(ajustes) {
     sonido: ajustes?.sonido !== false,
     animaciones: ajustes?.animaciones !== false,
     umbral: Math.min(1, Math.max(0.5, Number(ajustes?.umbral) || 0.8)),
+    verPeso: Boolean(ajustes?.verPeso),
     modo: normalizarModo(modo),
     horario: normalizarHorario(ajustes?.horario),
     forzado: normalizarForzado(ajustes?.forzado),

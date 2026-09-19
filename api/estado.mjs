@@ -9,11 +9,20 @@
      UPSTASH_REDIS_REST_TOKEN   idem
    ========================================================================== */
 
+import { createHash, timingSafeEqual } from 'node:crypto';
+
 const CLAVE_REDIS = 'estado';
+
+/* Compara sin delatar cuántos caracteres del token se acertaron: se comparan
+   los resúmenes, que siempre miden lo mismo, y en tiempo constante. */
+const mismoToken = (a, b) => timingSafeEqual(
+  createHash('sha256').update(String(a)).digest(),
+  createHash('sha256').update(String(b)).digest(),
+);
 
 export default async function handler(req, res) {
   const token = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '');
-  if (!process.env.SYNC_TOKEN || token !== process.env.SYNC_TOKEN) {
+  if (!process.env.SYNC_TOKEN || !mismoToken(token, process.env.SYNC_TOKEN)) {
     res.status(401).json({ error: 'token inválido' });
     return;
   }
@@ -33,11 +42,24 @@ export default async function handler(req, res) {
       return;
     }
     const { result } = await respuesta.json();
-    res.status(200).json({ estado: result ? JSON.parse(result) : null });
+    let estado = null;
+    if (result) {
+      try {
+        estado = JSON.parse(result);
+      } catch {
+        res.status(502).json({ error: 'el estado guardado está corrupto' });
+        return;
+      }
+    }
+    res.status(200).json({ estado });
     return;
   }
 
   if (req.method === 'PUT') {
+    if (!req.body || typeof req.body !== 'object') {
+      res.status(400).json({ error: 'falta el estado que hay que guardar' });
+      return;
+    }
     const respuesta = await fetch(`${base}/set/${CLAVE_REDIS}`, {
       method: 'POST',
       headers: cabecerasRedis,

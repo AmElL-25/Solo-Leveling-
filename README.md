@@ -115,10 +115,10 @@ añádela a la pantalla de inicio. Con Vercel el repositorio puede seguir siendo
 ### Publicar en Vercel
 
 1. Instala la app de Vercel en GitHub: [github.com/apps/vercel](https://github.com/apps/vercel)
-   → **Configure** → elige tu cuenta → **Only select repositories** → `POLOS-DRAUSSE` → **Save**.
+   → **Configure** → elige tu cuenta → **Only select repositories** → este repositorio → **Save**.
    Con esto el repositorio puede seguir siendo privado.
 2. Entra en [vercel.com](https://vercel.com) con tu cuenta de GitHub.
-3. **Add New… → Project**, elige `POLOS-DRAUSSE` e **Import**.
+3. **Add New… → Project**, elige este repositorio e **Import**.
 4. No hay nada que configurar: es un sitio estático, sin framework ni build. Pulsa **Deploy**.
    (La única función del servidor, `api/estado.mjs`, es opcional y solo se activa si
    configuras la sincronización — ver [Sincronizar entre dispositivos](#sincronizar-entre-dispositivos-opcional).)

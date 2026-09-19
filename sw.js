@@ -1,7 +1,7 @@
 /* Service worker: guarda la app en caché para que funcione sin conexión.
    Sube CACHE al cambiar cualquier archivo para forzar la actualización. */
 
-const CACHE = 'sistema-v18';
+const CACHE = 'sistema-v19';
 
 const ARCHIVOS = [
   './',
@@ -84,6 +84,11 @@ self.addEventListener('activate', (evento) => {
 self.addEventListener('fetch', (evento) => {
   const peticion = evento.request;
   if (peticion.method !== 'GET' || !peticion.url.startsWith('http')) return;
+
+  // La sincronización nunca se guarda: su gracia es traer lo último del
+  // servidor, y una copia en caché devolvería siempre la primera respuesta.
+  // Sin red, bajar() ya se queda con lo local, así que no se pierde nada.
+  if (new URL(peticion.url).pathname.startsWith('/api/')) return;
 
   // Primero la caché: la app debe abrir igual de rápido con o sin red.
   evento.respondWith(

@@ -27,6 +27,7 @@ export const VERSION = 2;            // ...pero el contenido sí evoluciona
 export function estadoInicial() {
   return {
     version: VERSION,
+    actualizado: 0, // epoch ms; decide qué copia manda al sincronizar entre dispositivos
     jugador: estadoInicialJugador(),
     misiones: misionesIniciales(),
     puerta: null,
@@ -57,6 +58,7 @@ export function normalizar(datos) {
 
   return {
     version: VERSION,
+    actualizado: Number(datos.actualizado) || 0,
     jugador: normalizarJugador(datos.jugador),
     misiones,
     puerta: normalizarPuerta(datos.puerta),

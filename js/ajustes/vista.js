@@ -21,6 +21,9 @@ export const elAjustes = {
   btnImportar: $('#btn-importar'),
   archivoImportar: $('#archivo-importar'),
   btnReiniciar: $('#btn-reiniciar'),
+  tokenSync: $('#ajuste-token-sync'),
+  btnGuardarToken: $('#btn-guardar-token'),
+  estadoSync: $('#estado-sync'),
 };
 
 const DIAS = ['D', 'L', 'M', 'X', 'J', 'V', 'S'];

@@ -106,6 +106,7 @@ function render() {
   // nada hasta que llegue su propia incursión.
   document.querySelector('#retos-sistema').hidden = area !== 'personal';
   elIncursion.seccion.hidden = area !== 'profesional';
+  mostrarCuadro(area === 'profesional');
   renderJefe(estado.jefe, estado.castigo.activo);
   renderIncursion(estado.incursion);
   renderPeso(estado, estado.ajustes.verPeso);
@@ -341,14 +342,27 @@ function avisarNovedades(resumen) {
 
 /* ------------------------------ pestañas ------------------------------ */
 
-document.querySelectorAll('.pestana').forEach((boton) => {
-  boton.addEventListener('click', () => {
-    document.querySelectorAll('.pestana').forEach((otro) => {
-      const activo = otro === boton;
-      otro.setAttribute('aria-selected', String(activo));
-      document.querySelector(`#tab-${otro.dataset.tab}`).hidden = !activo;
-    });
+const irAPestana = (nombre) => {
+  document.querySelectorAll('.pestana').forEach((otro) => {
+    const activo = otro.dataset.tab === nombre;
+    otro.setAttribute('aria-selected', String(activo));
+    document.querySelector(`#tab-${otro.dataset.tab}`).hidden = !activo;
   });
+};
+
+/**
+ * El cuadro de mando son indicadores comerciales: solo existe en SALES. Si
+ * estaba abierto al cambiar de carril hay que mover la selección, o quedaría
+ * una pestaña activa invisible con su panel abierto.
+ */
+function mostrarCuadro(visible) {
+  const pestana = document.querySelector('.pestana[data-tab="cuadro"]');
+  pestana.hidden = !visible;
+  if (!visible && pestana.getAttribute('aria-selected') === 'true') irAPestana('mision');
+}
+
+document.querySelectorAll('.pestana').forEach((boton) => {
+  boton.addEventListener('click', () => irAPestana(boton.dataset.tab));
 });
 
 /* ------------------------------ misiones ------------------------------ */

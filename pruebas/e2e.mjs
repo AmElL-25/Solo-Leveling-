@@ -339,6 +339,13 @@ await page.click('[data-plantilla="gerente-fisico"]');
 await page.waitForTimeout(150);
 await aceptar();          // la ventana del Sistema tapa el apartado: primero se cierra
 await cerrarConfig();
+
+// Sus misiones de ventas viven en el carril profesional, y el cuadro de mando
+// también: hay que cambiar de carril para verlos.
+comprobar('las misiones de ventas no están en el carril personal',
+  await mision('Prospección').count() === 0);
+comprobar('y el cuerpo sí', await mision('Cardio').count() === 1);
+await cambiarCarril();
 comprobar('se puede volver a la plantilla de gerente',
   await mision('Prospección').count() === 1);
 
@@ -353,18 +360,23 @@ comprobar('el cuadro muestra las propuestas',
 comprobar('sin cierres todavía no hay conversión',
   (await page.locator('#cuadro-mes').textContent()).includes('sin propuestas') === false);
 
-// Un cierre da conversión y hace el doble de daño que la actividad. Se mide
-// contra una misión de actividad de la misma plantilla, no contra la de antes.
+// Un resultado vale el doble que la actividad. Se comprueba sobre la regla
+// misma: el jefe de la semana ya solo recibe golpes del carril personal.
+const golpes = await page.evaluate(async () => {
+  const { danoPorMision } = await import('/js/jefes/reglas.js');
+  const jugador = { nivel: 1, clase: null, titulo: 'ninguno',
+    stats: { fuerza: 10, agilidad: 10, vitalidad: 10, inteligencia: 10, percepcion: 10 } };
+  return {
+    actividad: danoPorMision(jugador, { xp: 40, indicador: 'reuniones' }),
+    resultado: danoPorMision(jugador, { xp: 80, indicador: 'cierres' }),
+  };
+});
+comprobar('una venta cerrada pega el doble que la actividad',
+  Math.abs(golpes.resultado - golpes.actividad * (80 / 40) * 2) <= 2,
+  `(${golpes.resultado} frente a ${golpes.actividad})`);
+
 await page.click('.pestana[data-tab="mision"]');
-const vidaLimpia = (await leerEstado()).jefe.vida;
-await fijar('Reuniones con clientes', 9999);   // 40 XP, actividad
-const danoActividad = vidaLimpia - (await leerEstado()).jefe.vida;
-const vidaAntes = (await leerEstado()).jefe.vida;
-await fijar('Ventas cerradas', 1);             // 80 XP, resultado: ×2
-const danoCierre = vidaAntes - (await leerEstado()).jefe.vida;
-comprobar('la venta cerrada pega el doble que la actividad',
-  Math.abs(danoCierre - danoActividad * (80 / 40) * 2) <= 2,
-  `(${danoCierre} frente a ${danoActividad})`);
+await fijar('Ventas cerradas', 1);
 
 await page.click('.pestana[data-tab="cuadro"]');
 comprobar('la conversión aparece al haber cierres (1 de 3)',
@@ -397,16 +409,17 @@ comprobar('el día archivado guarda la facturación', archivado.indicadores.ingr
 
 /* ------------------------- 16. los dos modos ------------------------- */
 
-comprobar('arranca en modo Sistema',
-  await page.locator('body').getAttribute('data-modo') === 'sistema');
-comprobar('el interruptor ofrece el otro modo',
-  await page.locator('#btn-modo').textContent() === 'MODO SALES');
-
-// Se vuelve a la plantilla de dos carriles: es la que tiene lado profesional.
+// Se empieza de cero: la sección anterior deja la plantilla de gerente y el
+// carril profesional puestos, y aquí se comprueba justo el arranque.
 await page.evaluate(() => localStorage.clear());
 await page.reload();
 await page.waitForSelector('.mision');
 await aceptar();
+
+comprobar('arranca en modo Sistema',
+  await page.locator('body').getAttribute('data-modo') === 'sistema');
+comprobar('el interruptor ofrece el otro modo',
+  await page.locator('#btn-modo').textContent() === 'MODO SALES');
 
 await page.click('#btn-modo');
 comprobar('el interruptor cambia a SALES',
@@ -434,7 +447,10 @@ comprobar('en SALES siguen estando los títulos', await page.locator('#lista-tit
 comprobar('en SALES se esconden el jefe y la puerta',
   await page.locator('#retos-sistema').isHidden());
 comprobar('pero no se pierden', await page.locator('#puerta').count() === 1);
-comprobar('en SALES sigue estando el cuadro de mando', await page.locator('#tab-cuadro').count() === 1);
+comprobar('el cuadro de mando es de SALES',
+  await page.locator('.pestana[data-tab="cuadro"]').isVisible());
+comprobar('y en SALES hay cuatro pestañas',
+  await page.locator('.pestana:visible').count() === 4);
 
 // Los avisos no bloquean: salen arriba y se van solos
 await page.click('.pestana[data-tab="mision"]');
@@ -758,7 +774,31 @@ const cerrada = await leerEstado();
 comprobar('la incursión queda cerrada', cerrada.incursion.cerrada === true);
 comprobar('y no cae castigo por el plazo', cerrada.castigo.origen !== 'incursion');
 
-/* ------------- 22. el peso por dentro y el objetivo que crece ------------- */
+/* ------------------ 22. el cuadro de mando solo en SALES ------------------ */
+
+await page.evaluate(() => localStorage.clear());
+await page.reload();
+await page.waitForSelector('.mision');
+await aceptar();
+
+comprobar('en EL SISTEMA el cuadro no se ofrece',
+  await page.locator('.pestana[data-tab="cuadro"]').isHidden());
+comprobar('y quedan tres pestañas', await page.locator('.pestana:visible').count() === 3);
+
+// Estando en el cuadro y cambiando de carril, la selección tiene que moverse:
+// si no, quedaría una pestaña activa invisible con su panel abierto.
+await cambiarCarril();
+await page.click('.pestana[data-tab="cuadro"]');
+comprobar('el cuadro se abre en SALES', await page.locator('#tab-cuadro').isVisible());
+await cambiarCarril();
+comprobar('al volver a EL SISTEMA se cierra el cuadro',
+  await page.locator('#tab-cuadro').isHidden());
+comprobar('y la pestaña activa pasa a ser la misión',
+  await page.locator('.pestana[data-tab="mision"]').getAttribute('aria-selected') === 'true');
+comprobar('sin dejar dos paneles abiertos a la vez',
+  await page.locator('main > section:not([hidden])').count() === 1);
+
+/* ------------- 23. el peso por dentro y el objetivo que crece ------------- */
 
 await page.evaluate(() => localStorage.clear());
 await page.reload();
@@ -851,7 +891,7 @@ const topes = await page.evaluate(async () => {
 comprobar('no pasa del triple de lo que se puso', topes.arriba === 24000, `(${topes.arriba})`);
 comprobar('ni baja de la mitad', topes.abajo === 4000, `(${topes.abajo})`);
 
-/* ------------------ 23. un guardado antiguo sigue abriendo ------------------ */
+/* ------------------ 24. un guardado antiguo sigue abriendo ------------------ */
 
 await page.evaluate(() => {
   localStorage.setItem('sistema:v1', JSON.stringify({

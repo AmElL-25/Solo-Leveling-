@@ -240,8 +240,12 @@ p { margin: 0; }
 
 /* ------------------------------ pestañas ------------------------------ */
 
-.pestanas { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 14px; }
+/* Flex y no rejilla: al esconder una pestaña las demás se reparten el ancho
+   en vez de dejar un hueco. */
+.pestanas { display: flex; gap: 5px; margin-bottom: 14px; }
 .pestana {
+  flex: 1;
+  min-width: 0;
   padding: 10px 2px;
   font: inherit;
   font-size: 0.66rem;

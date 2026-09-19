@@ -147,6 +147,12 @@ La app es una PWA: se instala desde el navegador, sin tiendas de aplicaciones.
 En ambos casos queda en la pantalla de inicio con su icono, se abre a pantalla completa
 (sin barra de direcciones) y funciona sin conexión.
 
+> **Instálala antes de empezar a jugar en serio, sobre todo en iPhone.** La app instalada
+> guarda su progreso en un almacén propio, separado del navegador: lo que hagas en la pestaña
+> de Safari no aparece dentro del icono, y al revés. Si ya tienes partida en el navegador,
+> abre **ajustes → DESCARGAR COPIA** allí y luego **RESTAURAR COPIA** dentro de la app
+> instalada. Lo mismo vale al cambiar de teléfono: la copia es un archivo `.json` tuyo.
+
 ### Comprobar que funciona como PWA
 
 - Ábrela desde el icono: **no debe verse la barra de direcciones del navegador**.

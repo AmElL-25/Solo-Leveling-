@@ -1,7 +1,7 @@
 /* Service worker: guarda la app en caché para que funcione sin conexión.
    Sube CACHE al cambiar cualquier archivo para forzar la actualización. */
 
-const CACHE = 'sistema-v17';
+const CACHE = 'sistema-v18';
 
 const ARCHIVOS = [
   './',
@@ -11,6 +11,7 @@ const ARCHIVOS = [
   './js/progreso.js',
   './js/nucleo/fecha.js',
   './js/nucleo/almacenamiento.js',
+  './js/nucleo/sincronizacion.js',
   './js/notificaciones/notificaciones.js',
   './js/sonido/sintetizador.js',
   './js/jugador/reglas.js',

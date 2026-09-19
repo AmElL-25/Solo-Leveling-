@@ -5,7 +5,9 @@ App web para cumplir tus misiones cada día con la mecánica de las novelas de p
 por fallar la misión diaria.
 
 No necesita instalación, ni servidor, ni cuenta. Es HTML, CSS y JavaScript puro:
-funciona sin conexión y todo tu progreso se guarda en tu propio dispositivo.
+funciona sin conexión y todo tu progreso se guarda en tu propio dispositivo. Si usas
+varios dispositivos, hay una [sincronización opcional](#sincronizar-entre-dispositivos-opcional)
+que sigue sin cuentas: solo un token tuyo.
 
 ## Cómo se juega
 
@@ -118,6 +120,8 @@ añádela a la pantalla de inicio. Con Vercel el repositorio puede seguir siendo
 2. Entra en [vercel.com](https://vercel.com) con tu cuenta de GitHub.
 3. **Add New… → Project**, elige `POLOS-DRAUSSE` e **Import**.
 4. No hay nada que configurar: es un sitio estático, sin framework ni build. Pulsa **Deploy**.
+   (La única función del servidor, `api/estado.mjs`, es opcional y solo se activa si
+   configuras la sincronización — ver [Sincronizar entre dispositivos](#sincronizar-entre-dispositivos-opcional).)
 5. Cada `git push` a la rama de producción vuelve a desplegar la app automáticamente.
 
 ### Publicar en GitHub Pages (requiere repositorio público en cuentas gratuitas)
@@ -125,6 +129,10 @@ añádela a la pantalla de inicio. Con Vercel el repositorio puede seguir siendo
 1. En GitHub: **Settings → Pages → Source: Deploy from a branch**, elige la rama y la
    carpeta `/ (root)`, y guarda.
 2. Abre la URL que aparece (`https://<usuario>.github.io/<repo>/`).
+
+GitHub Pages no ejecuta funciones de servidor, así que la sincronización entre
+dispositivos no funciona ahí: la app sigue jugándose igual, solo local en cada
+dispositivo.
 
 ## Instalarla en el móvil
 
@@ -182,6 +190,28 @@ borra si limpias los datos del navegador o desinstalas la app. En **AJUSTES** ti
 `DESCARGAR COPIA` y `RESTAURAR COPIA` para llevarte el progreso a otro móvil o guardarlo
 a salvo.
 
+## Sincronizar entre dispositivos (opcional)
+
+Sin nada que configurar, cada dispositivo guarda su propio progreso por separado, como
+siempre. Si usas la app desde varios (móvil y portátil, por ejemplo) puedes activar una
+sincronización mínima contra un pequeño servidor:
+
+1. En el proyecto de Vercel: **Storage → Create Database → Upstash (Redis)**, en el plan
+   gratuito. Al conectarlo, Vercel añade solo `UPSTASH_REDIS_REST_URL` y
+   `UPSTASH_REDIS_REST_TOKEN` a las variables de entorno del proyecto.
+2. Añade tú una tercera variable, `SYNC_TOKEN`, con cualquier cadena larga que solo tú
+   conozcas (es la contraseña de tu propio progreso: cualquiera con este token puede leer
+   y escribir tu partida).
+3. Vuelve a desplegar para que la función recoja las variables nuevas.
+4. En cada dispositivo, abre **⚙ Configuración → SINCRONIZAR ENTRE DISPOSITIVOS**, pega
+   el mismo `SYNC_TOKEN` y pulsa `GUARDAR Y PROBAR`.
+
+A partir de ahí, cada cambio se guarda en local y además se sube a `/api/estado`; al
+abrir la app, si el servidor tiene una copia más reciente que la de ese dispositivo, la
+usa. Es "el último que guarda gana", sin fusión de conflictos: pensado para un solo
+jugador en un par de dispositivos, no para varias personas editando a la vez. Sin token
+configurado, este apartado no hace nada y la app sigue siendo 100 % local.
+
 ## Estructura
 
 El código se organiza por **lo que hace el juego** (arquitectura *screaming*), no por
@@ -218,9 +248,12 @@ js/ajustes/                    Sonido, texto animado, copia de seguridad y reini
 js/notificaciones/             Ventanas del Sistema, máquina de escribir y sonidos
 
 js/nucleo/                     Utilidades técnicas sin reglas de juego:
-                                fecha.js (fechas, id, reloj) y
-                                almacenamiento.js (localStorage con manejo de errores)
+                                fecha.js (fechas, id, reloj),
+                                almacenamiento.js (localStorage con manejo de errores) y
+                                sincronizacion.js (subir/bajar el estado si hay token)
 
+api/estado.mjs                 Función serverless de Vercel: guarda y devuelve el estado
+                                en Redis para la sincronización entre dispositivos (opcional)
 sw.js                          Service worker: caché para el modo sin conexión
 manifest.webmanifest           Metadatos para instalarla como app (nombre, iconos, colores)
 vercel.json                    Cabeceras del despliegue (tipo del manifest, caché del worker)

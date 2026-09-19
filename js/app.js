@@ -4,8 +4,11 @@
    propio; solo conecta lo que ya define cada feature.
    ========================================================================== */
 
-import { cargar, guardar, borrar, estadoInicial, exportar, importar } from './progreso.js';
+import {
+  cargar, guardar, borrar, estadoInicial, exportar, importar, normalizar,
+} from './progreso.js';
 import { fechaHoy } from './nucleo/fecha.js';
+import { bajar, subir, tokenGuardado, guardarToken } from './nucleo/sincronizacion.js';
 import { notificar, sonar, configurarAnimaciones, configurarAvisos } from './notificaciones/notificaciones.js';
 import { despertarSonido } from './sonido/sintetizador.js';
 
@@ -119,7 +122,9 @@ function render() {
 }
 
 function actualizar() {
+  estado.actualizado = Date.now();
   guardar(estado);
+  subir(estado); // best-effort: si no hay token o no hay red, no hace nada
   render();
 }
 
@@ -933,6 +938,22 @@ elAjustes.archivoImportar.addEventListener('change', async (evento) => {
   evento.target.value = '';
 });
 
+elAjustes.tokenSync.value = tokenGuardado();
+
+elAjustes.btnGuardarToken.addEventListener('click', async () => {
+  guardarToken(elAjustes.tokenSync.value);
+  if (!tokenGuardado()) {
+    elAjustes.estadoSync.textContent = 'Sincronización desactivada.';
+    return;
+  }
+  elAjustes.estadoSync.textContent = 'Comprobando...';
+  const ok = await subir(estado);
+  elAjustes.estadoSync.textContent = ok
+    ? 'Token guardado. Sincronizado con el servidor.'
+    : 'Token guardado, pero no se pudo conectar con el servidor. Revisa el token y la configuración en Vercel.';
+  pitido(ok ? 'guardar' : 'error');
+});
+
 elAjustes.btnReiniciar.addEventListener('click', () => {
   if (!confirm('Se borrará todo tu progreso: nivel, estadísticas, racha, oro e historial. ¿Continuar?')) return;
   borrar();
@@ -977,16 +998,27 @@ document.addEventListener('visibilitychange', () => {
 document.addEventListener('pointerdown', despertarSonido, { once: true });
 document.addEventListener('keydown', despertarSonido, { once: true });
 
-sincronizarModo();
-// La primera vez se abre la incursión sola, a dos meses vista. La fecha se
-// cambia en la configuración en cuanto se sepa la de verdad.
-if (!estado.incursion) estado.incursion = crearIncursion(estado);
-const resumenInicial = comprobarDia();
-avisarTitulos(revisarTitulos(estado));
-avisarMisionDiaria();
-avisarNovedades(resumenInicial);
-renderReloj();
-actualizar();
+async function arrancar() {
+  // Si hay token, el estado del servidor manda cuando es más reciente que el
+  // local: así lo que marcaste en otro dispositivo llega a este.
+  const remoto = await bajar();
+  if (remoto && Number(remoto.actualizado) > Number(estado.actualizado)) {
+    estado = normalizar(remoto);
+  }
+
+  sincronizarModo();
+  // La primera vez se abre la incursión sola, a dos meses vista. La fecha se
+  // cambia en la configuración en cuanto se sepa la de verdad.
+  if (!estado.incursion) estado.incursion = crearIncursion(estado);
+  const resumenInicial = comprobarDia();
+  avisarTitulos(revisarTitulos(estado));
+  avisarMisionDiaria();
+  avisarNovedades(resumenInicial);
+  renderReloj();
+  actualizar();
+}
+
+arrancar();
 
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   window.addEventListener('load', () => {

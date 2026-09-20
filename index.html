@@ -411,6 +411,22 @@
   </div>
 </dialog>
 
+<!-- Bienvenida en un aparato nuevo: ofrece traer la partida de siempre -->
+<dialog id="dlg-sync" class="dialogo">
+  <h2>SINCRONIZAR ESTE APARATO</h2>
+  <p class="tenue">Pega tu token y este aparato se unirá a tu partida: lo que marques aquí
+    llegará a los demás. Si prefieres una partida aparte, solo de este aparato, puedes
+    seguir sin él — y conectarlo más tarde desde ⚙ Configuración.</p>
+  <label>Token
+    <input type="password" id="sync-token" placeholder="pega aquí tu token" autocomplete="off">
+  </label>
+  <p class="tenue" id="sync-estado" aria-live="polite"></p>
+  <div class="acciones acciones--columna">
+    <button class="boton" type="button" id="btn-sync-conectar">CONECTAR</button>
+    <button class="boton" type="button" id="btn-sync-omitir">SEGUIR SOLO EN ESTE APARATO</button>
+  </div>
+</dialog>
+
 <!-- Avisos discretos del modo SALES -->
 <div class="avisos" id="avisos" aria-live="polite"></div>
 

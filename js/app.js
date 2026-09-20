@@ -8,7 +8,9 @@ import {
   cargar, guardar, borrar, estadoInicial, exportar, importar, normalizar,
 } from './progreso.js';
 import { fechaHoy } from './nucleo/fecha.js';
-import { bajar, subir, tokenGuardado, guardarToken } from './nucleo/sincronizacion.js';
+import {
+  bajar, subir, tokenGuardado, guardarToken, probarToken, haySincronizacion, syncOmitido, omitirSync,
+} from './nucleo/sincronizacion.js';
 import { notificar, sonar, configurarAnimaciones, configurarAvisos } from './notificaciones/notificaciones.js';
 import { despertarSonido } from './sonido/sintetizador.js';
 
@@ -73,7 +75,9 @@ import { renderCuadro } from './negocio/vista.js';
 import { normalizarCuota } from './negocio/reglas.js';
 
 import { renderHistorial } from './historial/vista.js';
-import { elAjustes, renderAjustes } from './ajustes/vista.js';
+import {
+  elAjustes, renderAjustes, abrirBienvenidaSync, cerrarBienvenidaSync,
+} from './ajustes/vista.js';
 import { sonidoActivo, textoAnimado } from './ajustes/reglas.js';
 
 import { modoEfectivo, forzar, normalizarHorario } from './modo/reglas.js';
@@ -992,6 +996,46 @@ document.addEventListener('visibilitychange', () => {
   actualizar();
 });
 
+/* ----------------------------- bienvenida ----------------------------- */
+
+/* Por qué falló el token, en palabras del jugador. */
+const MOTIVO_SYNC = {
+  vacio: 'Pega el token, o sigue sin él si prefieres jugar solo aquí.',
+  token: 'Ese token no es el del servidor. Revísalo y vuelve a intentarlo.',
+  servidor: 'El servidor todavía no tiene la sincronización montada.',
+  red: 'Sin conexión. Puedes seguir en local y conectarlo luego desde ⚙ Configuración.',
+};
+
+/* Aparato sin token: en vez de arrancar con una partida vacía en silencio, se
+   ofrece traer la de siempre. El token solo se guarda si el servidor lo acepta,
+   para no dejar guardado uno que no funciona. */
+function pedirTokenInicial() {
+  return new Promise((resolver) => {
+    const cerrar = () => { cerrarBienvenidaSync(); resolver(); };
+
+    const conectar = async () => {
+      elAjustes.syncEstado.textContent = 'Comprobando...';
+      const resultado = await probarToken(elAjustes.syncToken.value);
+      if (!resultado.ok) {
+        elAjustes.syncEstado.textContent = MOTIVO_SYNC[resultado.motivo];
+        pitido('error');
+        return;
+      }
+      guardarToken(elAjustes.syncToken.value);
+      pitido('guardar');
+      cerrar();
+    };
+
+    elAjustes.btnSyncConectar.addEventListener('click', conectar);
+    elAjustes.syncToken.addEventListener('keydown', (evento) => {
+      if (evento.key === 'Enter') conectar();
+    });
+    elAjustes.btnSyncOmitir.addEventListener('click', () => { omitirSync(); cerrar(); });
+
+    abrirBienvenidaSync();
+  });
+}
+
 /* ------------------------------ arranque ------------------------------ */
 
 // Los navegadores bloquean el audio hasta el primer toque del usuario.
@@ -999,6 +1043,13 @@ document.addEventListener('pointerdown', despertarSonido, { once: true });
 document.addEventListener('keydown', despertarSonido, { once: true });
 
 async function arrancar() {
+  // Aparato nuevo: se pregunta antes de nada, para que la partida de siempre
+  // esté ya puesta cuando se pinte la pantalla. Solo donde el despliegue tenga
+  // sincronización: en local o en un sitio estático no hay token que valga.
+  if (!tokenGuardado() && !syncOmitido() && await haySincronizacion()) {
+    await pedirTokenInicial();
+  }
+
   // Si hay token, el estado del servidor manda cuando es más reciente que el
   // local: así lo que marcaste en otro dispositivo llega a este.
   const remoto = await bajar();

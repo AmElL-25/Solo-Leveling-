@@ -1,7 +1,7 @@
 /* Service worker: guarda la app en caché para que funcione sin conexión.
    Sube CACHE al cambiar cualquier archivo para forzar la actualización. */
 
-const CACHE = 'sistema-v21';
+const CACHE = 'sistema-v24';
 
 const ARCHIVOS = [
   './',
@@ -79,8 +79,23 @@ self.addEventListener('install', (evento) => {
 self.addEventListener('activate', (evento) => {
   evento.waitUntil(
     caches.keys()
-      .then((claves) => Promise.all(claves.filter((c) => c !== CACHE).map((c) => caches.delete(c))))
-      .then(() => self.clients.claim())
+      .then((claves) => {
+        // Había caché anterior = esto es un relevo, no una instalación nueva.
+        // Solo entonces hay pestañas pintadas con la versión vieja.
+        const habiaVersionAnterior = claves.some((c) => c !== CACHE);
+        return Promise.all(claves.filter((c) => c !== CACHE).map((c) => caches.delete(c)))
+          .then(() => habiaVersionAnterior);
+      })
+      .then((habiaVersionAnterior) => self.clients.claim().then(() => habiaVersionAnterior))
+      // La pestaña abierta se pintó con la versión anterior, que ya está fuera
+      // de la caché: sin esto haría falta abrir la app dos veces para ver lo
+      // nuevo. Se recarga desde aquí porque el relevo lo decide este
+      // trabajador, que es el nuevo — la página todavía corre el código viejo
+      // y no puede encargarse ella. Pasa una sola vez por versión.
+      .then((habiaVersionAnterior) => (habiaVersionAnterior
+        ? self.clients.matchAll({ type: 'window' })
+          .then((pestanas) => Promise.all(pestanas.map((p) => p.navigate(p.url).catch(() => {}))))
+        : null))
   );
 });
 

@@ -11,7 +11,7 @@ import { fechaHoy } from './nucleo/fecha.js';
 import { hayCuentas, recuperar } from './nucleo/supabase.js';
 import {
   sesionGuardada, sesionValida, iniciarSesion, crearCuenta, cerrarSesion,
-  bajarSiGana, subirPartida,
+  bajarSiGana, subirPartida, cuentaOmitida, omitirCuenta,
 } from './cuenta/reglas.js';
 import { notificar, sonar, configurarAnimaciones, configurarAvisos } from './notificaciones/notificaciones.js';
 import { despertarSonido } from './sonido/sintetizador.js';
@@ -990,8 +990,11 @@ elCuenta.btnCambiar.addEventListener('click', () => {
 elCuenta.btnCerrar.addEventListener('click', cerrarCuenta);
 
 elCuenta.btnOlvide.addEventListener('click', async () => {
+  // Para recuperar hace falta el correo aunque se entre con el nombre: el
+  // enlace tiene que llegar a algún sitio, y el nick no es una dirección.
+  elCuenta.campoEmail.hidden = false;
   const correo = elCuenta.email.value.trim();
-  if (!correo) { avisar('Escribe tu correo y vuelve a tocar aquí.'); return; }
+  if (!correo) { avisar('Escribe tu correo arriba y vuelve a tocar aquí.'); return; }
   ocupado(true);
   const r = await recuperar(correo);
   ocupado(false);
@@ -1003,9 +1006,13 @@ elCuenta.btnOlvide.addEventListener('click', async () => {
 });
 
 elCuenta.btnEnviar.addEventListener('click', async () => {
+  const nombre = elCuenta.nick.value.trim();
   const correo = elCuenta.email.value.trim();
   const clave = elCuenta.clave.value;
-  if (!correo || !clave) { avisar('Faltan el correo o la contraseña.'); return; }
+  if (!nombre || !clave || (registrando && !correo)) {
+    avisar(registrando ? 'Faltan datos por rellenar.' : 'Faltan el nombre o la contraseña.');
+    return;
+  }
   if (registrando && clave.length < 8) {
     avisar('La contraseña es muy corta: usa al menos 8 caracteres.');
     return;
@@ -1013,7 +1020,9 @@ elCuenta.btnEnviar.addEventListener('click', async () => {
 
   ocupado(true);
   avisar(registrando ? 'Creando tu cuenta...' : 'Entrando...', false);
-  const r = registrando ? await crearCuenta(correo, clave) : await iniciarSesion(correo, clave);
+  const r = registrando
+    ? await crearCuenta(correo, clave, nombre)
+    : await iniciarSesion(nombre, clave);
   ocupado(false);
 
   if (!r.ok) { avisar(r.error); pitido('error'); return; }
@@ -1026,6 +1035,8 @@ elCuenta.btnEnviar.addEventListener('click', async () => {
   }
 
   elCuenta.clave.value = '';
+  elCuenta.email.value = '';
+  if (resolverBienvenida) { const soltar = resolverBienvenida; resolverBienvenida = null; soltar(); }
   cerrarCuenta();
   refrescarCuenta();
   pitido('guardar');
@@ -1036,6 +1047,24 @@ elCuenta.btnAbrir.addEventListener('click', () => {
   registrando = false;
   abrirCuenta(false);
 });
+
+/* Aparato nuevo: lo primero es ofrecer la cuenta, antes de las ventanas del
+   juego. Si no, la partida vacía arranca y el jugador no se entera de que la
+   suya está a un paso. Se pregunta una sola vez: quien elige jugar sin cuenta
+   no vuelve a verlo, y siempre le queda ⚙ Configuración. */
+function darLaBienvenida() {
+  return new Promise((resolver) => {
+    const cerrar = () => { cerrarCuenta(); resolver(); };
+    elCuenta.btnSin.addEventListener('click', () => { omitirCuenta(); cerrar(); }, { once: true });
+    resolverBienvenida = cerrar;
+    registrando = false;
+    abrirCuenta(false, true);
+  });
+}
+
+/* Lo rellena darLaBienvenida y lo usa el botón de enviar para cerrar la
+   bienvenida en cuanto la sesión sale bien. */
+let resolverBienvenida = null;
 
 elCuenta.btnSalir.addEventListener('click', async () => {
   if (!confirm('Tu partida se queda en este aparato. ¿Cerrar sesión?')) return;
@@ -1094,6 +1123,9 @@ async function arrancar() {
   // que la de aquí: así lo que marcaste en otro aparato llega a este. Sin
   // sesión, o sin red, se juega con lo local y no se pierde nada.
   refrescarCuenta();
+  if (hayCuentas() && !sesionGuardada() && sinPartidaPropia && !cuentaOmitida()) {
+    await darLaBienvenida();
+  }
   const remoto = await bajarSiGana(estado, sinPartidaPropia);
   if (remoto) estado = normalizar(remoto);
 

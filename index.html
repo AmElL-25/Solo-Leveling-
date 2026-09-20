@@ -414,7 +414,11 @@
 <dialog id="dlg-cuenta" class="dialogo">
   <h2 id="cuenta-titulo">ENTRAR</h2>
   <p class="tenue" id="cuenta-ayuda">Tu partida te sigue a cualquier aparato donde entres.</p>
-  <label>Correo
+  <label id="campo-nick">Nombre de jugador
+    <input type="text" id="cuenta-nick" autocomplete="username" placeholder="3 a 20 caracteres"
+           maxlength="20" spellcheck="false" autocapitalize="none">
+  </label>
+  <label id="campo-email">Correo
     <input type="email" id="cuenta-email" autocomplete="email" placeholder="tu@correo.com">
   </label>
   <label>Contraseña
@@ -426,6 +430,7 @@
     <button class="boton" type="button" id="btn-cuenta-cambiar">NO TENGO CUENTA, CREAR UNA</button>
     <button class="boton" type="button" id="btn-cuenta-olvide">OLVIDÉ MI CONTRASEÑA</button>
     <button class="boton" type="button" id="btn-cuenta-cerrar">VOLVER</button>
+    <button class="boton" type="button" id="btn-cuenta-sin" hidden>JUGAR SIN CUENTA</button>
   </div>
 </dialog>
 

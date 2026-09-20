@@ -53,9 +53,30 @@ async function llamar(ruta, opciones = {}) {
 
 /* ------------------------------- cuentas ------------------------------- */
 
-export const registrar = (correo, clave) => llamar('/auth/v1/signup', {
+/* El nick viaja en 'data': Supabase lo guarda con el usuario y un disparador
+   de la base crea el perfil. Así el nombre queda reservado en el mismo acto
+   del registro, sin un segundo paso que pueda quedarse a medias. */
+export const registrar = (correo, clave, nick) => llamar('/auth/v1/signup', {
   method: 'POST',
-  body: JSON.stringify({ email: correo, password: clave }),
+  body: JSON.stringify({ email: correo, password: clave, data: { nick } }),
+});
+
+/** ¿Está libre ese nombre? true/false, o null si no se pudo preguntar.
+    Responde un sí o un no, nunca un correo. */
+export async function nickLibre(nick) {
+  const r = await llamar('/rest/v1/rpc/nick_libre', {
+    method: 'POST',
+    body: JSON.stringify({ consulta: String(nick).trim() }),
+  });
+  return r.ok ? r.datos === true : null;
+}
+
+/** Entrar con nombre de jugador. La traducción nick → correo ocurre dentro de
+    Supabase (función 'entrar-con-nick'), nunca aquí: el correo de nadie llega
+    al navegador. Devuelve lo mismo que entrar() cuando sale bien. */
+export const entrarConNick = (nick, clave) => llamar('/functions/v1/entrar-con-nick', {
+  method: 'POST',
+  body: JSON.stringify({ nick: String(nick).trim(), clave }),
 });
 
 export const entrar = (correo, clave) => llamar('/auth/v1/token?grant_type=password', {

@@ -9,6 +9,9 @@ export const elCuenta = {
   dialogo: $('#dlg-cuenta'),
   titulo: $('#cuenta-titulo'),
   ayuda: $('#cuenta-ayuda'),
+  nick: $('#cuenta-nick'),
+  campoNick: $('#campo-nick'),
+  campoEmail: $('#campo-email'),
   email: $('#cuenta-email'),
   clave: $('#cuenta-clave'),
   aviso: $('#cuenta-aviso'),
@@ -16,6 +19,7 @@ export const elCuenta = {
   btnCambiar: $('#btn-cuenta-cambiar'),
   btnOlvide: $('#btn-cuenta-olvide'),
   btnCerrar: $('#btn-cuenta-cerrar'),
+  btnSin: $('#btn-cuenta-sin'),
   // En ⚙ Configuración
   explica: $('#cuenta-explica'),
   correo: $('#cuenta-correo'),
@@ -29,12 +33,17 @@ export const elCuenta = {
 export function pintarModo(registrando) {
   elCuenta.titulo.textContent = registrando ? 'CREAR CUENTA' : 'ENTRAR';
   elCuenta.ayuda.textContent = registrando
-    ? 'Con una cuenta tu partida deja de vivir solo en este aparato.'
+    ? 'Elige tu nombre de jugador. El correo solo se usa para confirmar la cuenta y recuperarla.'
     : 'Tu partida te sigue a cualquier aparato donde entres.';
   elCuenta.btnEnviar.textContent = registrando ? 'CREAR CUENTA' : 'ENTRAR';
   elCuenta.btnCambiar.textContent = registrando
     ? 'YA TENGO CUENTA, ENTRAR'
     : 'NO TENGO CUENTA, CREAR UNA';
+  // Al registrarse hacen falta los dos; al entrar basta el nombre, y el mismo
+  // campo acepta el correo para las cuentas antiguas que aún no tienen nick.
+  elCuenta.campoEmail.hidden = !registrando;
+  elCuenta.campoNick.firstChild.textContent = registrando ? 'Nombre de jugador' : 'Nombre o correo';
+  elCuenta.nick.placeholder = registrando ? '3 a 20 caracteres' : 'tu nombre de jugador';
   // Recuperar la contraseña solo tiene sentido si ya existe.
   elCuenta.btnOlvide.hidden = registrando;
   elCuenta.clave.autocomplete = registrando ? 'new-password' : 'current-password';
@@ -46,10 +55,14 @@ export function avisar(texto, esError = true) {
   elCuenta.aviso.style.color = texto && esError ? 'var(--malo, #ff6b78)' : '';
 }
 
-export function abrirCuenta(registrando = false) {
+/* 'bienvenida' es la primera apertura en un aparato nuevo: entonces no hay a
+   dónde volver, así que en vez de VOLVER se ofrece jugar sin cuenta. */
+export function abrirCuenta(registrando = false, bienvenida = false) {
   pintarModo(registrando);
+  elCuenta.btnCerrar.hidden = bienvenida;
+  elCuenta.btnSin.hidden = !bienvenida;
   elCuenta.dialogo.showModal();
-  elCuenta.email.focus();
+  elCuenta.nick.focus();
 }
 
 export const cerrarCuenta = () => elCuenta.dialogo.close();
@@ -63,7 +76,8 @@ export function renderCuenta(sesion, hayCuentas) {
   elCuenta.btnAbrir.hidden = Boolean(sesion) || !hayCuentas;
   elCuenta.btnSalir.hidden = !sesion;
   elCuenta.correo.hidden = !sesion;
-  if (sesion) elCuenta.correo.textContent = `Sesión de ${sesion.correo}`;
+  // Por el nombre de jugador, no por el correo: es su identidad en el juego.
+  if (sesion) elCuenta.correo.textContent = `Jugando como ${sesion.nick || sesion.correo}`;
   if (!hayCuentas) {
     elCuenta.explica.textContent = 'Las cuentas todavía no están configuradas en este despliegue. '
       + 'La app funciona igual: tu partida vive en este aparato.';

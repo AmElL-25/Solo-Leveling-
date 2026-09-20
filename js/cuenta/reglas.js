@@ -7,9 +7,12 @@
    ========================================================================== */
 
 import { leer, escribir, eliminar } from '../nucleo/almacenamiento.js';
-import { entrar, registrar, renovar, salir, leerPartida, guardarPartida } from '../nucleo/supabase.js';
+import {
+  entrar, entrarConNick, registrar, nickLibre, renovar, salir, leerPartida, guardarPartida,
+} from '../nucleo/supabase.js';
 
 const CLAVE_SESION = 'sistema:sesion';
+const CLAVE_OMITIR = 'sistema:cuenta-omitida'; // este aparato eligió jugar en local
 // Margen para no usar un token que caduca mientras va de camino al servidor.
 const MARGEN_MS = 60_000;
 
@@ -26,6 +29,15 @@ export function sesionGuardada() {
 const guardarSesion = (sesion) => escribir(CLAVE_SESION, JSON.stringify(sesion));
 export const olvidarSesion = () => eliminar(CLAVE_SESION);
 
+/* Quien dijo que no quiere cuenta no debe verlo cada vez que abre la app.
+   En el servidor local del README se da por omitida siempre: desarrollando se
+   abre la app con el navegador en blanco una y otra vez, y una pantalla de
+   acceso en cada arranque solo estorba. La cuenta sigue a mano en
+   ⚙ Configuración, que es donde se prueba. */
+const enDesarrollo = () => ['localhost', '127.0.0.1', '::1', ''].includes(location.hostname);
+export const cuentaOmitida = () => enDesarrollo() || leer(CLAVE_OMITIR) === '1';
+export const omitirCuenta = () => escribir(CLAVE_OMITIR, '1');
+
 /* Lo que devuelve Supabase al entrar, reducido a lo que la app necesita. */
 function comoSesion(datos) {
   return {
@@ -34,11 +46,20 @@ function comoSesion(datos) {
     caduca: Date.now() + (Number(datos.expires_in) || 3600) * 1000,
     usuario: datos.user?.id ?? '',
     correo: datos.user?.email ?? '',
+    // Lo añade la función 'entrar-con-nick'; al entrar por correo no viene.
+    nick: datos.nick ?? '',
   };
 }
 
-export async function iniciarSesion(correo, clave) {
-  const r = await entrar(String(correo).trim().toLowerCase(), clave);
+export const FORMATO_NICK = /^[A-Za-z0-9_-]{3,20}$/;
+
+/** Entrar con el nombre de jugador. Se acepta también el correo, para las
+    cuentas creadas antes de que existieran los nombres. */
+export async function iniciarSesion(nombre, clave) {
+  const limpio = String(nombre).trim();
+  const r = limpio.includes('@')
+    ? await entrar(limpio.toLowerCase(), clave)
+    : await entrarConNick(limpio, clave);
   if (!r.ok) return r;
   const sesion = comoSesion(r.datos);
   if (!sesion.acceso || !sesion.usuario) {
@@ -50,11 +71,21 @@ export async function iniciarSesion(correo, clave) {
 
 /** Registro. Con la confirmación por correo activada, Supabase no devuelve
     sesión todavía: hay que ir al buzón antes de poder entrar. */
-export async function crearCuenta(correo, clave) {
-  const r = await registrar(String(correo).trim().toLowerCase(), clave);
+export async function crearCuenta(correo, clave, nick) {
+  const nombre = String(nick).trim();
+  if (!FORMATO_NICK.test(nombre)) {
+    return { ok: false, error: 'El nombre lleva de 3 a 20 letras, números, guion o guion bajo.' };
+  }
+  // Se pregunta antes para poder avisar con claridad; el índice único de la
+  // base es la garantía de verdad si dos personas eligen el mismo a la vez.
+  const libre = await nickLibre(nombre);
+  if (libre === false) return { ok: false, error: 'Ese nombre ya está cogido. Prueba otro.' };
+  if (libre === null) return { ok: false, error: 'Sin conexión.' };
+
+  const r = await registrar(String(correo).trim().toLowerCase(), clave, nombre);
   if (!r.ok) return r;
   if (r.datos?.access_token) {
-    const sesion = comoSesion(r.datos);
+    const sesion = { ...comoSesion(r.datos), nick: nombre };
     guardarSesion(sesion);
     return { ok: true, sesion };
   }
@@ -71,7 +102,9 @@ export async function sesionValida() {
 
   const r = await renovar(sesion.refresco);
   if (r.ok && r.datos?.access_token) {
-    const fresca = { ...comoSesion(r.datos), correo: r.datos.user?.email || sesion.correo };
+    const fresca = { ...comoSesion(r.datos),
+      correo: r.datos.user?.email || sesion.correo,
+      nick: sesion.nick };
     guardarSesion(fresca);
     return fresca;
   }

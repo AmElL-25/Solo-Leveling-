@@ -13,5 +13,5 @@
    Vacíos, la app funciona igual: se juega en local, sin cuentas.
    ========================================================================== */
 
-export const URL_SUPABASE = '';
-export const CLAVE_PUBLICA = '';
+export const URL_SUPABASE = 'https://pdvzwzxqxmgeqmuvpmqg.supabase.co';
+export const CLAVE_PUBLICA = 'sb_publishable_KK8fbPeLZHv0mdI9UIcNFw_riWsORPP';

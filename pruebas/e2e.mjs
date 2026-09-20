@@ -340,13 +340,23 @@ await page.waitForTimeout(150);
 await aceptar();          // la ventana del Sistema tapa el apartado: primero se cierra
 await cerrarConfig();
 
-// Sus misiones de ventas viven en el carril profesional, y el cuadro de mando
-// también: hay que cambiar de carril para verlos.
+// La plantilla solo toca el carril que se está mirando: aplicada en personal,
+// el profesional se queda tal cual estaba.
 comprobar('las misiones de ventas no están en el carril personal',
   await mision('Prospección').count() === 0);
 comprobar('y el cuerpo sí', await mision('Cardio').count() === 1);
 await cambiarCarril();
-comprobar('se puede volver a la plantilla de gerente',
+comprobar('el otro carril no se toca al aplicar la plantilla',
+  await mision('Prospección').count() === 0);
+
+// Aplicada también en SALES, ahí sí llegan sus objetivos de ventas.
+await abrirConfig();
+page.once('dialog', (d) => d.accept());
+await page.click('[data-plantilla="gerente-fisico"]');
+await page.waitForTimeout(150);
+await aceptar();
+await cerrarConfig();
+comprobar('aplicarla en SALES trae sus objetivos de ventas a ese carril',
   await mision('Prospección').count() === 1);
 
 await fijar('Prospección', 20);

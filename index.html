@@ -306,16 +306,15 @@
         </label>
       </div>
 
-      <div class="panel__cabecera panel__cabecera--separada"><h2>SINCRONIZAR ENTRE DISPOSITIVOS</h2></div>
-      <p class="tenue">Opcional. Con un token, el progreso también viaja a un pequeño servidor y llega
-        a todos tus dispositivos. Sin token, la app se queda como siempre: solo local.</p>
-      <label>Token
-        <input type="password" id="ajuste-token-sync" placeholder="pega aquí tu token" autocomplete="off">
-      </label>
-      <div class="acciones">
-        <button class="boton" id="btn-guardar-token" type="button">GUARDAR Y PROBAR</button>
+      <div class="panel__cabecera panel__cabecera--separada"><h2>TU CUENTA</h2></div>
+      <p class="tenue" id="cuenta-explica">Opcional. Con una cuenta, tu partida viaja contigo a
+        cualquier aparato donde entres. Sin ella, la app se queda como siempre: solo local.</p>
+      <p class="tenue" id="cuenta-correo" hidden></p>
+      <div class="acciones acciones--columna">
+        <button class="boton" id="btn-abrir-cuenta" type="button">ENTRAR O CREAR CUENTA</button>
+        <button class="boton" id="btn-cerrar-sesion" type="button" hidden>CERRAR SESIÓN</button>
       </div>
-      <p class="tenue" id="estado-sync"></p>
+      <p class="tenue" id="cuenta-estado" aria-live="polite"></p>
 
       <div class="panel__cabecera panel__cabecera--separada"><h2>DATOS</h2></div>
       <p class="tenue">Tu progreso se guarda en este dispositivo y, si activaste la sincronización,
@@ -411,19 +410,22 @@
   </div>
 </dialog>
 
-<!-- Bienvenida en un aparato nuevo: ofrece traer la partida de siempre -->
-<dialog id="dlg-sync" class="dialogo">
-  <h2>SINCRONIZAR ESTE APARATO</h2>
-  <p class="tenue">Pega tu token y este aparato se unirá a tu partida: lo que marques aquí
-    llegará a los demás. Si prefieres una partida aparte, solo de este aparato, puedes
-    seguir sin él — y conectarlo más tarde desde ⚙ Configuración.</p>
-  <label>Token
-    <input type="password" id="sync-token" placeholder="pega aquí tu token" autocomplete="off">
+<!-- Cuenta: entrar o registrarse. Opcional, se puede cerrar y jugar en local -->
+<dialog id="dlg-cuenta" class="dialogo">
+  <h2 id="cuenta-titulo">ENTRAR</h2>
+  <p class="tenue" id="cuenta-ayuda">Tu partida te sigue a cualquier aparato donde entres.</p>
+  <label>Correo
+    <input type="email" id="cuenta-email" autocomplete="email" placeholder="tu@correo.com">
   </label>
-  <p class="tenue" id="sync-estado" aria-live="polite"></p>
+  <label>Contraseña
+    <input type="password" id="cuenta-clave" autocomplete="current-password" placeholder="mínimo 8 caracteres">
+  </label>
+  <p class="tenue" id="cuenta-aviso" aria-live="polite"></p>
   <div class="acciones acciones--columna">
-    <button class="boton" type="button" id="btn-sync-conectar">CONECTAR</button>
-    <button class="boton" type="button" id="btn-sync-omitir">SEGUIR SOLO EN ESTE APARATO</button>
+    <button class="boton" type="button" id="btn-cuenta-enviar">ENTRAR</button>
+    <button class="boton" type="button" id="btn-cuenta-cambiar">NO TENGO CUENTA, CREAR UNA</button>
+    <button class="boton" type="button" id="btn-cuenta-olvide">OLVIDÉ MI CONTRASEÑA</button>
+    <button class="boton" type="button" id="btn-cuenta-cerrar">VOLVER</button>
   </div>
 </dialog>
 

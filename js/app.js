@@ -8,9 +8,11 @@ import {
   cargar, guardar, borrar, estadoInicial, exportar, importar, normalizar,
 } from './progreso.js';
 import { fechaHoy } from './nucleo/fecha.js';
+import { hayCuentas, recuperar } from './nucleo/supabase.js';
 import {
-  bajar, subir, tokenGuardado, guardarToken, probarToken, haySincronizacion, syncOmitido, omitirSync,
-} from './nucleo/sincronizacion.js';
+  sesionGuardada, sesionValida, iniciarSesion, crearCuenta, cerrarSesion,
+  bajarSiGana, subirPartida,
+} from './cuenta/reglas.js';
 import { notificar, sonar, configurarAnimaciones, configurarAvisos } from './notificaciones/notificaciones.js';
 import { despertarSonido } from './sonido/sintetizador.js';
 
@@ -75,15 +77,20 @@ import { renderCuadro } from './negocio/vista.js';
 import { normalizarCuota } from './negocio/reglas.js';
 
 import { renderHistorial } from './historial/vista.js';
+import { elAjustes, renderAjustes } from './ajustes/vista.js';
 import {
-  elAjustes, renderAjustes, abrirBienvenidaSync, cerrarBienvenidaSync,
-} from './ajustes/vista.js';
+  elCuenta, abrirCuenta, cerrarCuenta, pintarModo, avisar, ocupado, renderCuenta,
+} from './cuenta/vista.js';
 import { sonidoActivo, textoAnimado } from './ajustes/reglas.js';
 
 import { modoEfectivo, forzar, normalizarHorario } from './modo/reglas.js';
 import { aplicarModo, elModo, t } from './modo/vista.js';
 
 let estado = cargar();
+/* Se mira ANTES de que arrancar() selle la hora: 'actualizado' en cero
+   significa que en este aparato nunca se guardó una partida. Sirve para no
+   dejar que un aparato recién instalado pise la partida buena de la nube. */
+const sinPartidaPropia = Number(estado.actualizado) === 0;
 let modo = modoEfectivo(estado.ajustes);
 
 /* El interruptor de la cabecera no cambia solo las palabras: decide qué
@@ -128,7 +135,7 @@ function render() {
 function actualizar() {
   estado.actualizado = Date.now();
   guardar(estado);
-  subir(estado); // best-effort: si no hay token o no hay red, no hace nada
+  subirPartida(estado); // best-effort: sin sesión o sin red, no hace nada
   render();
 }
 
@@ -942,20 +949,90 @@ elAjustes.archivoImportar.addEventListener('change', async (evento) => {
   evento.target.value = '';
 });
 
-elAjustes.tokenSync.value = tokenGuardado();
+/* --------------------------------- cuenta --------------------------------- */
 
-elAjustes.btnGuardarToken.addEventListener('click', async () => {
-  guardarToken(elAjustes.tokenSync.value);
-  if (!tokenGuardado()) {
-    elAjustes.estadoSync.textContent = 'Sincronización desactivada.';
+let registrando = false;
+
+function refrescarCuenta() {
+  renderCuenta(sesionGuardada(), hayCuentas());
+}
+
+/* Al entrar, las dos partidas se encuentran: manda la más reciente, igual que
+   entre dos aparatos. Si gana la de la nube se adopta; si gana la de aquí, se
+   sube, para que el aparato de al lado la vea. */
+async function unirPartidas() {
+  const remoto = await bajarSiGana(estado, sinPartidaPropia);
+  if (remoto) {
+    estado = normalizar(remoto);
+    guardar(estado);
+    actualizar();
+    return 'Sesión iniciada. Recuperada tu partida.';
+  }
+  await subirPartida(estado);
+  return 'Sesión iniciada. Tu partida ya está a salvo.';
+}
+
+elCuenta.btnCambiar.addEventListener('click', () => {
+  registrando = !registrando;
+  pintarModo(registrando);
+});
+
+elCuenta.btnCerrar.addEventListener('click', cerrarCuenta);
+
+elCuenta.btnOlvide.addEventListener('click', async () => {
+  const correo = elCuenta.email.value.trim();
+  if (!correo) { avisar('Escribe tu correo y vuelve a tocar aquí.'); return; }
+  ocupado(true);
+  const r = await recuperar(correo);
+  ocupado(false);
+  // Se responde igual exista o no la cuenta: así nadie puede averiguar qué
+  // correos están registrados probando uno a uno.
+  avisar(r.ok || r.estado !== 0
+    ? 'Si ese correo tiene cuenta, le llegará un enlace para cambiar la contraseña.'
+    : 'Sin conexión.', !r.ok && r.estado === 0);
+});
+
+elCuenta.btnEnviar.addEventListener('click', async () => {
+  const correo = elCuenta.email.value.trim();
+  const clave = elCuenta.clave.value;
+  if (!correo || !clave) { avisar('Faltan el correo o la contraseña.'); return; }
+  if (registrando && clave.length < 8) {
+    avisar('La contraseña es muy corta: usa al menos 8 caracteres.');
     return;
   }
-  elAjustes.estadoSync.textContent = 'Comprobando...';
-  const ok = await subir(estado);
-  elAjustes.estadoSync.textContent = ok
-    ? 'Token guardado. Sincronizado con el servidor.'
-    : 'Token guardado, pero no se pudo conectar con el servidor. Revisa el token y la configuración en Vercel.';
-  pitido(ok ? 'guardar' : 'error');
+
+  ocupado(true);
+  avisar(registrando ? 'Creando tu cuenta...' : 'Entrando...', false);
+  const r = registrando ? await crearCuenta(correo, clave) : await iniciarSesion(correo, clave);
+  ocupado(false);
+
+  if (!r.ok) { avisar(r.error); pitido('error'); return; }
+
+  if (r.confirmar) {
+    avisar('Cuenta creada. Confirma tu correo desde el mensaje que te enviamos y vuelve a entrar.', false);
+    pitido('guardar');
+    registrando = false;
+    return;
+  }
+
+  elCuenta.clave.value = '';
+  cerrarCuenta();
+  refrescarCuenta();
+  pitido('guardar');
+  elCuenta.estado.textContent = await unirPartidas();
+});
+
+elCuenta.btnAbrir.addEventListener('click', () => {
+  registrando = false;
+  abrirCuenta(false);
+});
+
+elCuenta.btnSalir.addEventListener('click', async () => {
+  if (!confirm('Tu partida se queda en este aparato. ¿Cerrar sesión?')) return;
+  await cerrarSesion();
+  refrescarCuenta();
+  elCuenta.estado.textContent = 'Sesión cerrada. Sigues jugando en este aparato.';
+  pitido('guardar');
 });
 
 elAjustes.btnReiniciar.addEventListener('click', () => {
@@ -996,46 +1073,6 @@ document.addEventListener('visibilitychange', () => {
   actualizar();
 });
 
-/* ----------------------------- bienvenida ----------------------------- */
-
-/* Por qué falló el token, en palabras del jugador. */
-const MOTIVO_SYNC = {
-  vacio: 'Pega el token, o sigue sin él si prefieres jugar solo aquí.',
-  token: 'Ese token no es el del servidor. Revísalo y vuelve a intentarlo.',
-  servidor: 'El servidor todavía no tiene la sincronización montada.',
-  red: 'Sin conexión. Puedes seguir en local y conectarlo luego desde ⚙ Configuración.',
-};
-
-/* Aparato sin token: en vez de arrancar con una partida vacía en silencio, se
-   ofrece traer la de siempre. El token solo se guarda si el servidor lo acepta,
-   para no dejar guardado uno que no funciona. */
-function pedirTokenInicial() {
-  return new Promise((resolver) => {
-    const cerrar = () => { cerrarBienvenidaSync(); resolver(); };
-
-    const conectar = async () => {
-      elAjustes.syncEstado.textContent = 'Comprobando...';
-      const resultado = await probarToken(elAjustes.syncToken.value);
-      if (!resultado.ok) {
-        elAjustes.syncEstado.textContent = MOTIVO_SYNC[resultado.motivo];
-        pitido('error');
-        return;
-      }
-      guardarToken(elAjustes.syncToken.value);
-      pitido('guardar');
-      cerrar();
-    };
-
-    elAjustes.btnSyncConectar.addEventListener('click', conectar);
-    elAjustes.syncToken.addEventListener('keydown', (evento) => {
-      if (evento.key === 'Enter') conectar();
-    });
-    elAjustes.btnSyncOmitir.addEventListener('click', () => { omitirSync(); cerrar(); });
-
-    abrirBienvenidaSync();
-  });
-}
-
 /* ------------------------------ arranque ------------------------------ */
 
 // Los navegadores bloquean el audio hasta el primer toque del usuario.
@@ -1043,19 +1080,12 @@ document.addEventListener('pointerdown', despertarSonido, { once: true });
 document.addEventListener('keydown', despertarSonido, { once: true });
 
 async function arrancar() {
-  // Aparato nuevo: se pregunta antes de nada, para que la partida de siempre
-  // esté ya puesta cuando se pinte la pantalla. Solo donde el despliegue tenga
-  // sincronización: en local o en un sitio estático no hay token que valga.
-  if (!tokenGuardado() && !syncOmitido() && await haySincronizacion()) {
-    await pedirTokenInicial();
-  }
-
-  // Si hay token, el estado del servidor manda cuando es más reciente que el
-  // local: así lo que marcaste en otro dispositivo llega a este.
-  const remoto = await bajar();
-  if (remoto && Number(remoto.actualizado) > Number(estado.actualizado)) {
-    estado = normalizar(remoto);
-  }
+  // Con sesión iniciada, la partida de la nube manda cuando es más reciente
+  // que la de aquí: así lo que marcaste en otro aparato llega a este. Sin
+  // sesión, o sin red, se juega con lo local y no se pierde nada.
+  refrescarCuenta();
+  const remoto = await bajarSiGana(estado, sinPartidaPropia);
+  if (remoto) estado = normalizar(remoto);
 
   sincronizarModo();
   // La primera vez se abre la incursión sola, a dos meses vista. La fecha se

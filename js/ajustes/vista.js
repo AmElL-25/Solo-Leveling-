@@ -21,28 +21,7 @@ export const elAjustes = {
   btnImportar: $('#btn-importar'),
   archivoImportar: $('#archivo-importar'),
   btnReiniciar: $('#btn-reiniciar'),
-  tokenSync: $('#ajuste-token-sync'),
-  btnGuardarToken: $('#btn-guardar-token'),
-  estadoSync: $('#estado-sync'),
-  // Bienvenida de un aparato nuevo: el mismo token, pedido al abrir.
-  syncToken: $('#sync-token'),
-  syncEstado: $('#sync-estado'),
-  btnSyncConectar: $('#btn-sync-conectar'),
-  btnSyncOmitir: $('#btn-sync-omitir'),
 };
-
-const dlgSync = $('#dlg-sync');
-
-export function abrirBienvenidaSync() {
-  elAjustes.syncEstado.textContent = '';
-  elAjustes.syncToken.value = '';
-  // Sin salida por Escape: las dos opciones están a la vista y hay que elegir
-  // una, para no dejar el aparato a medias sin querer.
-  dlgSync.addEventListener('cancel', (evento) => evento.preventDefault());
-  dlgSync.showModal();
-}
-
-export const cerrarBienvenidaSync = () => dlgSync.close();
 
 const DIAS = ['D', 'L', 'M', 'X', 'J', 'V', 'S'];
 

@@ -4,10 +4,10 @@ App web para cumplir tus misiones cada día con la mecánica de las novelas de p
 (estilo *Solo Leveling*): experiencia, niveles, rangos, estadísticas, racha y penalización
 por fallar la misión diaria.
 
-No necesita instalación, ni servidor, ni cuenta. Es HTML, CSS y JavaScript puro:
-funciona sin conexión y todo tu progreso se guarda en tu propio dispositivo. Si usas
-varios dispositivos, hay una [sincronización opcional](#sincronizar-entre-dispositivos-opcional)
-que sigue sin cuentas: solo un token tuyo.
+No necesita instalación ni cuenta para jugar. Es HTML, CSS y JavaScript puro:
+funciona sin conexión y tu progreso se guarda en tu propio dispositivo. Si usas
+varios, puedes [crear una cuenta](#cuentas-y-sincronización-opcional) y tu partida
+te seguirá a todos.
 
 ## Cómo se juega
 
@@ -120,8 +120,8 @@ añádela a la pantalla de inicio. Con Vercel el repositorio puede seguir siendo
 2. Entra en [vercel.com](https://vercel.com) con tu cuenta de GitHub.
 3. **Add New… → Project**, elige este repositorio e **Import**.
 4. No hay nada que configurar: es un sitio estático, sin framework ni build. Pulsa **Deploy**.
-   (La única función del servidor, `api/estado.mjs`, es opcional y solo se activa si
-   configuras la sincronización — ver [Sincronizar entre dispositivos](#sincronizar-entre-dispositivos-opcional).)
+   (Las cuentas son opcionales y viven en Supabase — ver
+   [Cuentas y sincronización](#cuentas-y-sincronización-opcional).)
 5. Cada `git push` a la rama de producción vuelve a desplegar la app automáticamente.
 
 ### Publicar en GitHub Pages (requiere repositorio público en cuentas gratuitas)
@@ -130,9 +130,8 @@ añádela a la pantalla de inicio. Con Vercel el repositorio puede seguir siendo
    carpeta `/ (root)`, y guarda.
 2. Abre la URL que aparece (`https://<usuario>.github.io/<repo>/`).
 
-GitHub Pages no ejecuta funciones de servidor, así que la sincronización entre
-dispositivos no funciona ahí: la app sigue jugándose igual, solo local en cada
-dispositivo.
+En GitHub Pages las cuentas funcionan igual: Supabase es un servicio aparte y no
+hace falta que tu hosting ejecute nada.
 
 ## Instalarla en el móvil
 
@@ -190,27 +189,43 @@ borra si limpias los datos del navegador o desinstalas la app. En **AJUSTES** ti
 `DESCARGAR COPIA` y `RESTAURAR COPIA` para llevarte el progreso a otro móvil o guardarlo
 a salvo.
 
-## Sincronizar entre dispositivos (opcional)
+## Cuentas y sincronización (opcional)
 
-Sin nada que configurar, cada dispositivo guarda su propio progreso por separado, como
-siempre. Si usas la app desde varios (móvil y portátil, por ejemplo) puedes activar una
-sincronización mínima contra un pequeño servidor:
+Sin cuenta, la app es la de siempre: se abre, se juega y el progreso vive en
+ese aparato. Con una cuenta, tu partida te sigue a cualquier aparato donde
+entres — y es la base sobre la que se podrá cobrar más adelante.
 
-1. En el proyecto de Vercel: **Storage → Create Database → Upstash (Redis)**, en el plan
-   gratuito. Al conectarlo, Vercel añade solo `UPSTASH_REDIS_REST_URL` y
-   `UPSTASH_REDIS_REST_TOKEN` a las variables de entorno del proyecto.
-2. Añade tú una tercera variable, `SYNC_TOKEN`, con cualquier cadena larga que solo tú
-   conozcas (es la contraseña de tu propio progreso: cualquiera con este token puede leer
-   y escribir tu partida).
-3. Vuelve a desplegar para que la función recoja las variables nuevas.
-4. En cada dispositivo, abre **⚙ Configuración → SINCRONIZAR ENTRE DISPOSITIVOS**, pega
-   el mismo `SYNC_TOKEN` y pulsa `GUARDAR Y PROBAR`.
+Las contraseñas las guarda y cifra **Supabase**; aquí no se almacena ninguna.
+La app no trae su librería: habla directo con su API REST, así que sigue sin
+dependencias, sin build y entera en tu dominio.
 
-A partir de ahí, cada cambio se guarda en local y además se sube a `/api/estado`; al
-abrir la app, si el servidor tiene una copia más reciente que la de ese dispositivo, la
-usa. Es "el último que guarda gana", sin fusión de conflictos: pensado para un solo
-jugador en un par de dispositivos, no para varias personas editando a la vez. Sin token
-configurado, este apartado no hace nada y la app sigue siendo 100 % local.
+### Montarlo (una sola vez)
+
+1. Crea un proyecto gratis en [supabase.com](https://supabase.com).
+2. **SQL Editor → New query**, pega el contenido de `supabase/esquema.sql` y
+   pulsa **Run**. Eso crea la tabla y, sobre todo, las políticas que impiden
+   que nadie lea o escriba la partida de otro.
+3. **Project Settings → API**: copia *Project URL* y la clave *anon public*.
+4. Pégalas en `js/cuenta/configuracion.js` y haz `git push`.
+
+Los dos valores del paso 4 van escritos en el repositorio a propósito: la clave
+*anon* no abre nada por sí sola, porque quien manda es la política de la base.
+La que **nunca** se copia a ningún sitio es la *service_role*, que sí se las
+salta.
+
+Con `configuracion.js` vacío la app funciona igual, solo que el apartado de la
+cuenta avisa de que todavía no está configurada.
+
+### Cómo se comporta
+
+- **Al entrar por primera vez en un aparato nuevo**, se adopta la partida de la
+  nube. Un aparato recién instalado nunca pisa la buena.
+- **Entre dos aparatos que ya juegan**, manda la copia guardada más tarde. Es
+  "el último que guarda gana", sin fusionar: pensado para un jugador en sus
+  aparatos, no para varias personas a la vez.
+- **Sin conexión** se juega igual con lo que haya en el aparato, y lo pendiente
+  sube en el siguiente guardado con red.
+- **Cerrar sesión** no borra nada: la partida se queda en ese aparato.
 
 ## Estructura
 
@@ -247,13 +262,14 @@ js/historial/                  Mapa de calor de los últimos 30 días
 js/ajustes/                    Sonido, texto animado, copia de seguridad y reinicio
 js/notificaciones/             Ventanas del Sistema, máquina de escribir y sonidos
 
+js/cuenta/                     Cuentas: sesión, entrar, registrarse y sincronizar
 js/nucleo/                     Utilidades técnicas sin reglas de juego:
                                 fecha.js (fechas, id, reloj),
                                 almacenamiento.js (localStorage con manejo de errores) y
-                                sincronizacion.js (subir/bajar el estado si hay token)
+                                supabase.js (las llamadas a la API de Supabase)
 
-api/estado.mjs                 Función serverless de Vercel: guarda y devuelve el estado
-                                en Redis para la sincronización entre dispositivos (opcional)
+supabase/esquema.sql           Tabla de partidas y las políticas que aíslan a cada
+                                jugador. Se pega en el SQL Editor de Supabase
 sw.js                          Service worker: caché para el modo sin conexión
 manifest.webmanifest           Metadatos para instalarla como app (nombre, iconos, colores)
 vercel.json                    Cabeceras del despliegue (tipo del manifest, caché del worker)

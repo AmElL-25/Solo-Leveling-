@@ -711,15 +711,25 @@ elPlantillas.lista.addEventListener('click', (evento) => {
   const boton = evento.target.closest('button[data-plantilla]');
   if (!boton) return;
   const plantilla = buscarPlantilla(boton.dataset.plantilla);
-  if (!confirm(`Se sustituirán tus misiones diarias por "${plantilla.nombre}". ¿Continuar?`)) return;
+  // La plantilla trae objetivos de los dos carriles, pero solo se aplica al
+  // que se está mirando: elegir un set para SALES no debe tocar lo de EL
+  // SISTEMA que ya tenías puesto, y viceversa.
+  const area = carril();
+  const otra = AREAS.find((a) => a !== area);
+  const nuevas = delArea(misionesDePlantilla(plantilla.id), area);
 
-  estado.misiones = misionesDePlantilla(plantilla.id);
-  estado.dia.completado = { personal: false, profesional: false };
+  if (!confirm(
+    `Se sustituirán tus objetivos de ${NOMBRE_CARRIL[area]} por "${plantilla.nombre}" `
+    + `(${nuevas.length} objetivos). Los de ${NOMBRE_CARRIL[otra]} no se tocan. ¿Continuar?`,
+  )) return;
+
+  estado.misiones = [...delArea(estado.misiones, otra), ...nuevas];
+  estado.dia.completado[area] = false;
   notificar({
     titulo: 'MISIÓN DIARIA ACTUALIZADA',
     lineas: [
       { texto: plantilla.nombre, destacado: true },
-      { texto: `${plantilla.misiones.length} objetivos nuevos para cada día.` },
+      { texto: `${nuevas.length} objetivos nuevos para ${NOMBRE_CARRIL[area]}.` },
     ],
   });
   pitido('guardar');

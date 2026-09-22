@@ -83,6 +83,9 @@ export function cargar() {
   try {
     return normalizar(JSON.parse(bruto));
   } catch {
+    // Antes de empezar de cero se aparta lo ilegible: el siguiente guardado
+    // pisaría la única copia, y a mano todavía se puede rescatar.
+    escribir(`${CLAVE}:corrupto`, bruto);
     return estadoInicial();
   }
 }
@@ -99,6 +102,17 @@ export function exportar(estado) {
   return JSON.stringify(estado, null, 2);
 }
 
+/** Lee una copia de seguridad. Lanza si el archivo no es una partida del Sistema. */
 export function importar(texto) {
-  return normalizar(JSON.parse(texto));
+  const datos = JSON.parse(texto);
+  // normalizar() convierte cualquier cosa en una partida nueva: sin esta
+  // comprobación, restaurar un JSON cualquiera borraría el progreso.
+  if (!esPartida(datos)) throw new Error('no es una copia del Sistema');
+  return normalizar(datos);
+}
+
+export function esPartida(datos) {
+  return Boolean(datos) && typeof datos === 'object' && !Array.isArray(datos)
+    && Boolean(datos.jugador) && typeof datos.jugador === 'object'
+    && Array.isArray(datos.misiones);
 }

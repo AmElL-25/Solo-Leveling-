@@ -187,7 +187,10 @@ sesión puede quedarse mudo.
 El progreso vive en el `localStorage` del navegador: no sale de tu dispositivo, pero se
 borra si limpias los datos del navegador o desinstalas la app. En **AJUSTES** tienes
 `DESCARGAR COPIA` y `RESTAURAR COPIA` para llevarte el progreso a otro móvil o guardarlo
-a salvo.
+a salvo. Restaurar pide confirmación y rechaza cualquier archivo que no sea una copia del
+Sistema. Si el guardado llegara a estar dañado, la app lo aparta en la clave
+`sistema:v1:corrupto` antes de empezar de cero, para poder rescatarlo; y si el navegador
+no deja guardar (almacenamiento lleno o bloqueado), avisa en lugar de fallar en silencio.
 
 ## Cuentas y sincronización (opcional)
 
@@ -198,6 +201,11 @@ entres — y es la base sobre la que se podrá cobrar más adelante.
 Las contraseñas las guarda y cifra **Supabase**; aquí no se almacena ninguna.
 La app no trae su librería: habla directo con su API REST, así que sigue sin
 dependencias, sin build y entera en tu dominio.
+
+Con sesión iniciada, la app se pinta con lo local sin esperar a la red. Al abrirla
+**y al volver a ella desde segundo plano** baja la partida de la nube antes de guardar
+nada, y se queda con la más reciente. Los toques seguidos viajan en una sola subida,
+y lo pendiente se envía al esconder la app.
 
 ### Montarlo (una sola vez)
 

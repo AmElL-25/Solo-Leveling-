@@ -142,11 +142,47 @@ export async function bajarSiGana(estadoLocal, sinPartidaPropia = false) {
   return Number(r.datos.actualizado) > (Number(estadoLocal?.actualizado) || 0) ? remoto : null;
 }
 
+/* Las subidas van de una en una y siempre con el último estado: si dos
+   salieran a la vez, la vieja podría llegar después y pisar a la nueva. Y
+   varios toques seguidos viajan en una sola: no hace falta una petición por
+   cada +1. */
+const ESPERA_SUBIDA = 1500; // ms
+let pendiente = null;
+let temporizador = null;
+let enCurso = null;
+
+async function vaciar({ alCerrar = false } = {}) {
+  clearTimeout(temporizador);
+  temporizador = null;
+  if (enCurso) await enCurso;
+  if (!pendiente) return true;
+  const estado = pendiente;
+  pendiente = null;
+  enCurso = (async () => {
+    const sesion = await sesionValida();
+    if (!sesion) return false;
+    const r = await guardarPartida(sesion.acceso, sesion.usuario, estado, { keepalive: alCerrar });
+    return r.ok;
+  })();
+  const ok = await enCurso;
+  enCurso = null;
+  return ok;
+}
+
 /** Sube la partida. Best-effort: si no hay sesión o no hay red, se reintenta
-    en el siguiente guardado y mientras tanto lo local no se pierde. */
-export async function subirPartida(estado) {
-  const sesion = await sesionValida();
-  if (!sesion) return false;
-  const r = await guardarPartida(sesion.acceso, sesion.usuario, estado);
-  return r.ok;
+    en el siguiente guardado y mientras tanto lo local no se pierde. Con
+    `inmediato` no espera a agrupar toques y devuelve si llegó. */
+export function subirPartida(estado, { inmediato = false } = {}) {
+  if (!sesionGuardada()) return Promise.resolve(false);
+  pendiente = estado;
+  if (inmediato) return vaciar();
+  clearTimeout(temporizador);
+  temporizador = setTimeout(vaciar, ESPERA_SUBIDA);
+  return Promise.resolve(true);
+}
+
+/** Sube ya lo que esté esperando: al esconder o cerrar la app, que en el
+    móvil puede no volver a abrirse. */
+export function subirPendiente() {
+  if (pendiente) vaciar({ alCerrar: true });
 }

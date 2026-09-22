@@ -14,6 +14,9 @@ export const hayCuentas = () => Boolean(URL_SUPABASE && CLAVE_PUBLICA);
 
 const base = () => URL_SUPABASE.replace(/\/+$/, '');
 
+// Una red lenta no puede dejar la app esperando: pasado esto cuenta como sin conexión.
+const TIEMPO_MAXIMO = 10_000;
+
 /* Mensajes de Supabase (en inglés y pensados para quien programa) traducidos a
    algo que un jugador pueda entender y accionar. */
 const MENSAJES = [
@@ -41,6 +44,8 @@ async function llamar(ruta, opciones = {}) {
     const respuesta = await fetch(`${base()}${ruta}`, {
       ...opciones,
       headers: { 'Content-Type': 'application/json', apikey: CLAVE_PUBLICA, ...opciones.headers },
+      cache: 'no-store',
+      signal: AbortSignal.timeout?.(TIEMPO_MAXIMO), // Safari < 16 no lo tiene
     });
     const texto = await respuesta.text();
     const datos = texto ? JSON.parse(texto) : null;
@@ -112,17 +117,17 @@ export async function leerPartida(acceso) {
 }
 
 /** Guarda (o pisa) la partida de quien trae ese token. */
-export function guardarPartida(acceso, usuario, estado) {
+export function guardarPartida(acceso, usuario, estado, { keepalive = false } = {}) {
+  // keepalive deja terminar la petición aunque la página se cierre, pero su
+  // cuerpo tiene un tope de 64 KB: por encima, se intenta como una normal.
+  const cuerpo = JSON.stringify({ usuario, estado, actualizado: Number(estado?.actualizado) || 0 });
   return llamar('/rest/v1/partidas', {
     method: 'POST',
+    keepalive: keepalive && cuerpo.length < 60_000,
     headers: {
       Authorization: `Bearer ${acceso}`,
       Prefer: 'resolution=merge-duplicates,return=minimal',
     },
-    body: JSON.stringify({
-      usuario,
-      estado,
-      actualizado: Number(estado?.actualizado) || 0,
-    }),
+    body: cuerpo,
   });
 }

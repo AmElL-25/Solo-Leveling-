@@ -8,7 +8,9 @@ import {
   cargar, guardar, borrar, estadoInicial, exportar, importar, normalizar,
 } from './progreso.js';
 import { fechaHoy } from './nucleo/fecha.js';
-import { bajar, subir, tokenGuardado, guardarToken } from './nucleo/sincronizacion.js';
+import {
+  bajar, subir, subirPendiente, tokenGuardado, guardarToken,
+} from './nucleo/sincronizacion.js';
 import { notificar, sonar, configurarAnimaciones, configurarAvisos } from './notificaciones/notificaciones.js';
 import { despertarSonido } from './sonido/sintetizador.js';
 
@@ -121,11 +123,41 @@ function render() {
   renderAjustes(estado);
 }
 
+let avisadoSinGuardar = false;
+
 function actualizar() {
   estado.actualizado = Date.now();
-  guardar(estado);
+  if (guardar(estado)) {
+    avisadoSinGuardar = false;
+  } else if (!avisadoSinGuardar) {
+    // Almacenamiento lleno o bloqueado (modo privado): mejor saberlo hoy que
+    // descubrir mañana que el progreso no se quedó.
+    avisadoSinGuardar = true;
+    notificar({
+      titulo: 'NO SE PUDO GUARDAR',
+      lineas: [
+        { texto: 'El navegador no deja guardar el progreso en este dispositivo.', destacado: true },
+        { texto: 'Descarga una copia desde la configuración para no perderlo.' },
+      ],
+      tipo: 'peligro',
+      boton: 'ENTENDIDO',
+    });
+  }
   subir(estado); // best-effort: si no hay token o no hay red, no hace nada
   render();
+}
+
+/**
+ * Trae la copia del servidor y la adopta si es más reciente que la local.
+ * Tiene que ir antes de cualquier guardado: guardar pone la hora de ahora y,
+ * sin bajar primero, este dispositivo pisaría lo que hiciste en otro.
+ */
+async function traerRemoto() {
+  const remoto = await bajar();
+  if (!remoto || !(Number(remoto.actualizado) > Number(estado.actualizado))) return false;
+  estado = normalizar(remoto);
+  guardar(estado);
+  return true;
 }
 
 function pitido(tipo) {
@@ -923,8 +955,11 @@ elAjustes.btnExportar.addEventListener('click', () => {
   const enlace = document.createElement('a');
   enlace.href = URL.createObjectURL(blob);
   enlace.download = `sistema-${fechaHoy()}.json`;
+  document.body.append(enlace);
   enlace.click();
-  URL.revokeObjectURL(enlace.href);
+  enlace.remove();
+  // Safari cancela la descarga si la URL se revoca en el mismo instante.
+  setTimeout(() => URL.revokeObjectURL(enlace.href), 10000);
 });
 
 elAjustes.btnImportar.addEventListener('click', () => elAjustes.archivoImportar.click());
@@ -933,7 +968,15 @@ elAjustes.archivoImportar.addEventListener('change', async (evento) => {
   const archivo = evento.target.files?.[0];
   if (!archivo) return;
   try {
-    estado = importar(await archivo.text());
+    const copia = importar(await archivo.text());
+    if (!confirm(
+      `Se sustituirá tu progreso actual (nivel ${estado.jugador.nivel}) por el de la copia `
+      + `(nivel ${copia.jugador.nivel}). ¿Continuar?`,
+    )) {
+      evento.target.value = '';
+      return;
+    }
+    estado = copia;
     comprobarDia();
     revisarSemana(estado);
     actualizar();
@@ -957,7 +1000,7 @@ elAjustes.btnGuardarToken.addEventListener('click', async () => {
     return;
   }
   elAjustes.estadoSync.textContent = 'Comprobando...';
-  const ok = await subir(estado);
+  const ok = await subir(estado, { inmediato: true });
   elAjustes.estadoSync.textContent = ok
     ? 'Token guardado. Sincronizado con el servidor.'
     : 'Token guardado, pero no se pudo conectar con el servidor. Revisa el token y la configuración en Vercel.';
@@ -990,10 +1033,15 @@ setInterval(() => {
   actualizar();
 }, 30000);
 
-// Al volver a la app tras dejarla en segundo plano, revisamos la fecha.
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState !== 'visible') return;
+// Al esconder la app se sube lo pendiente: en el móvil puede no volver a abrirse.
+// Al volver, primero lo que llegó de otro dispositivo y luego la fecha.
+document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState !== 'visible') {
+    subirPendiente();
+    return;
+  }
   renderReloj();
+  await traerRemoto();
   const resumen = comprobarDia();
   if (resumen) {
     avisarMisionDiaria();
@@ -1002,6 +1050,8 @@ document.addEventListener('visibilitychange', () => {
   actualizar();
 });
 
+window.addEventListener('pagehide', subirPendiente);
+
 /* ------------------------------ arranque ------------------------------ */
 
 // Los navegadores bloquean el audio hasta el primer toque del usuario.
@@ -1009,12 +1059,14 @@ document.addEventListener('pointerdown', despertarSonido, { once: true });
 document.addEventListener('keydown', despertarSonido, { once: true });
 
 async function arrancar() {
+  // Lo local se pinta ya: la red no puede dejar la pantalla en blanco.
+  render();
+  renderReloj();
+
   // Si hay token, el estado del servidor manda cuando es más reciente que el
-  // local: así lo que marcaste en otro dispositivo llega a este.
-  const remoto = await bajar();
-  if (remoto && Number(remoto.actualizado) > Number(estado.actualizado)) {
-    estado = normalizar(remoto);
-  }
+  // local: así lo que marcaste en otro dispositivo llega a este. Se espera
+  // antes de juzgar el día para no juzgar una copia vieja.
+  await traerRemoto();
 
   sincronizarModo();
   // La primera vez se abre la incursión sola, a dos meses vista. La fecha se

@@ -188,7 +188,10 @@ sesión puede quedarse mudo.
 El progreso vive en el `localStorage` del navegador: no sale de tu dispositivo, pero se
 borra si limpias los datos del navegador o desinstalas la app. En **AJUSTES** tienes
 `DESCARGAR COPIA` y `RESTAURAR COPIA` para llevarte el progreso a otro móvil o guardarlo
-a salvo.
+a salvo. Restaurar pide confirmación y rechaza cualquier archivo que no sea una copia del
+Sistema. Si el guardado llegara a estar dañado, la app lo aparta en la clave
+`sistema:v1:corrupto` antes de empezar de cero, para poder rescatarlo; y si el navegador
+no deja guardar (almacenamiento lleno o bloqueado), avisa en lugar de fallar en silencio.
 
 ## Sincronizar entre dispositivos (opcional)
 
@@ -206,9 +209,11 @@ sincronización mínima contra un pequeño servidor:
 4. En cada dispositivo, abre **⚙ Configuración → SINCRONIZAR ENTRE DISPOSITIVOS**, pega
    el mismo `SYNC_TOKEN` y pulsa `GUARDAR Y PROBAR`.
 
-A partir de ahí, cada cambio se guarda en local y además se sube a `/api/estado`; al
-abrir la app, si el servidor tiene una copia más reciente que la de ese dispositivo, la
-usa. Es "el último que guarda gana", sin fusión de conflictos: pensado para un solo
+A partir de ahí, cada cambio se guarda en local y además se sube a `/api/estado` (los
+toques seguidos se agrupan en una sola subida, y lo pendiente se envía al esconder la
+app). Al abrirla **y al volver a ella desde segundo plano**, si el servidor tiene una copia
+más reciente que la de ese dispositivo, la usa antes de guardar nada. El service worker
+nunca guarda `/api/` en caché, y la app se pinta con lo local sin esperar a la red. Es "el último que guarda gana", sin fusión de conflictos: pensado para un solo
 jugador en un par de dispositivos, no para varias personas editando a la vez. Sin token
 configurado, este apartado no hace nada y la app sigue siendo 100 % local.
 

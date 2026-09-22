@@ -921,6 +921,78 @@ comprobar('sus misiones pasan a ser personales y diarias',
   antiguo.misiones.every((m) => m.area === 'personal' && m.periodo === 'dia'));
 comprobar('y se siguen viendo', await mision('Flexiones').count() === 1);
 
+/* ------------------ 25. copias de seguridad y sincronización ------------------ */
+
+const subirCopia = (contenido) => page.setInputFiles('#archivo-importar', {
+  name: 'copia.json', mimeType: 'application/json', buffer: Buffer.from(contenido),
+});
+
+await subirCopia('{"cualquier":"cosa"}');
+comprobar('un JSON que no es una partida se rechaza', await buscarAviso('ARCHIVO NO VÁLIDO'));
+await aceptar();
+comprobar('y no toca el progreso', (await leerEstado()).jugador.nivel === 4);
+
+const copiaNivel9 = JSON.stringify({ ...antiguo, jugador: { ...antiguo.jugador, nivel: 9 } });
+page.once('dialog', (d) => d.dismiss());
+await subirCopia(copiaNivel9);
+await page.waitForTimeout(100);
+comprobar('restaurar pide confirmación y se puede cancelar', (await leerEstado()).jugador.nivel === 4);
+
+page.once('dialog', (d) => d.accept());
+await subirCopia(copiaNivel9);
+comprobar('al aceptar se restaura', await buscarAviso('DATOS RESTAURADOS'));
+await aceptar();
+comprobar('con el nivel de la copia', (await leerEstado()).jugador.nivel === 9);
+
+await page.evaluate(() => localStorage.setItem('sistema:v1', '{roto'));
+await page.reload();
+await page.waitForSelector('.mision');
+await aceptar();
+comprobar('un guardado ilegible se aparta antes de empezar de cero',
+  await page.evaluate(() => localStorage.getItem('sistema:v1:corrupto')) === '{roto');
+
+// Servidor de sincronización simulado. El service worker se bloquea para que
+// las peticiones pasen por la ruta falsa.
+const ctxSync = await navegador.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
+const pSync = await ctxSync.newPage();
+pSync.on('pageerror', (e) => errores.push(String(e)));
+let remoto = null;
+const subidas = [];
+await pSync.route('**/api/estado', async (ruta) => {
+  if (ruta.request().method() === 'PUT') {
+    subidas.push(JSON.parse(ruta.request().postData()));
+    remoto = subidas.at(-1);
+    return ruta.fulfill({ json: { ok: true } });
+  }
+  return ruta.fulfill({ json: { estado: remoto } });
+});
+await pSync.goto(URL);
+await pSync.evaluate(() => localStorage.setItem('sistema:token-sync', 'prueba'));
+const estadoSync = () => pSync.evaluate(() => JSON.parse(localStorage.getItem('sistema:v1')));
+const base = await estadoSync();
+
+remoto = { ...base, actualizado: Date.now() + 60000, jugador: { ...base.jugador, nombre: 'Desde el portátil' } };
+await pSync.reload();
+await pSync.waitForTimeout(500);
+comprobar('al arrancar se adopta la copia remota más reciente',
+  (await estadoSync()).jugador.nombre === 'Desde el portátil');
+
+remoto = { ...remoto, actualizado: Date.now() + 120000, jugador: { ...remoto.jugador, nombre: 'Desde el móvil' } };
+subidas.length = 0;
+await pSync.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+await pSync.waitForTimeout(500);
+comprobar('al volver a la app también', (await estadoSync()).jugador.nombre === 'Desde el móvil');
+comprobar('sin pisar antes lo del otro dispositivo',
+  subidas.every((s) => s.jugador.nombre === 'Desde el móvil'));
+
+subidas.length = 0;
+for (let i = 0; i < 5; i += 1) {
+  await pSync.evaluate(() => document.querySelector('.mision [data-accion="mas"], .mision [data-accion="alternar"]')?.click());
+}
+await pSync.waitForTimeout(2500);
+comprobar('varios toques seguidos viajan en una sola subida', subidas.length === 1, `(${subidas.length})`);
+await ctxSync.close();
+
 
 console.log(ok.join('\n'));
 if (fallos.length) console.log('\n' + fallos.join('\n'));

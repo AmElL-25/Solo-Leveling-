@@ -921,6 +921,91 @@ comprobar('sus misiones pasan a ser personales y diarias',
   antiguo.misiones.every((m) => m.area === 'personal' && m.periodo === 'dia'));
 comprobar('y se siguen viendo', await mision('Flexiones').count() === 1);
 
+/* ------------------ 25. copias de seguridad y sincronización ------------------ */
+
+const subirCopia = (contenido) => page.setInputFiles('#archivo-importar', {
+  name: 'copia.json', mimeType: 'application/json', buffer: Buffer.from(contenido),
+});
+
+await subirCopia('{"cualquier":"cosa"}');
+comprobar('un JSON que no es una partida se rechaza', await buscarAviso('ARCHIVO NO VÁLIDO'));
+await aceptar();
+comprobar('y no toca el progreso', (await leerEstado()).jugador.nivel === 4);
+
+const copiaNivel9 = JSON.stringify({ ...antiguo, jugador: { ...antiguo.jugador, nivel: 9 } });
+page.once('dialog', (d) => d.dismiss());
+await subirCopia(copiaNivel9);
+await page.waitForTimeout(100);
+comprobar('restaurar pide confirmación y se puede cancelar', (await leerEstado()).jugador.nivel === 4);
+
+page.once('dialog', (d) => d.accept());
+await subirCopia(copiaNivel9);
+comprobar('al aceptar se restaura', await buscarAviso('DATOS RESTAURADOS'));
+await aceptar();
+comprobar('con el nivel de la copia', (await leerEstado()).jugador.nivel === 9);
+
+await page.evaluate(() => localStorage.setItem('sistema:v1', '{roto'));
+await page.reload();
+await page.waitForSelector('.mision');
+await aceptar();
+comprobar('un guardado ilegible se aparta antes de empezar de cero',
+  await page.evaluate(() => localStorage.getItem('sistema:v1:corrupto')) === '{roto');
+
+// Supabase simulado: una sesión falsa en este aparato y la tabla de partidas
+// servida desde aquí. Nada sale a la red de verdad.
+const ctxSync = await navegador.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
+const pSync = await ctxSync.newPage();
+pSync.on('pageerror', (e) => errores.push(String(e)));
+let remoto = null;
+const subidas = [];
+await pSync.route('**/*.supabase.co/**', async (ruta) => {
+  const peticion = ruta.request();
+  if (!peticion.url().includes('/rest/v1/partidas')) return ruta.fulfill({ status: 404, json: {} });
+  if (peticion.method() === 'POST') {
+    const fila = JSON.parse(peticion.postData());
+    subidas.push(fila.estado);
+    remoto = fila.estado;
+    return ruta.fulfill({ status: 201, body: '' });
+  }
+  return ruta.fulfill({ json: remoto ? [{ estado: remoto, actualizado: remoto.actualizado }] : [] });
+});
+await pSync.goto(URL);
+await pSync.waitForSelector('.mision');
+await pSync.evaluate(() => localStorage.setItem('sistema:sesion', JSON.stringify({
+  acceso: 'a', refresco: 'r', caduca: Date.now() + 3600000, usuario: 'u', correo: '', nick: 'prueba',
+})));
+const estadoSync = () => pSync.evaluate(() => JSON.parse(localStorage.getItem('sistema:v1')));
+const base = await estadoSync();
+
+remoto = { ...base, actualizado: Date.now() + 60000, jugador: { ...base.jugador, nombre: 'Desde el portátil' } };
+await pSync.reload();
+await pSync.waitForTimeout(500);
+comprobar('al arrancar se adopta la partida de la nube si es más reciente',
+  (await estadoSync()).jugador.nombre === 'Desde el portátil');
+
+remoto = { ...remoto, actualizado: Date.now() + 120000, jugador: { ...remoto.jugador, nombre: 'Desde el móvil' } };
+subidas.length = 0;
+await pSync.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+await pSync.waitForTimeout(2500);
+comprobar('al volver a la app también', (await estadoSync()).jugador.nombre === 'Desde el móvil');
+comprobar('sin pisar antes lo del otro aparato',
+  subidas.every((e) => e.jugador.nombre === 'Desde el móvil'), `(${subidas.map((e) => e.jugador.nombre)})`);
+
+subidas.length = 0;
+for (let i = 0; i < 5; i += 1) {
+  await pSync.evaluate(() => document.querySelector('.mision [data-accion="mas"], .mision [data-accion="alternar"]')?.click());
+}
+await pSync.waitForTimeout(2500);
+comprobar('varios toques seguidos viajan en una sola subida', subidas.length === 1, `(${subidas.length})`);
+
+// Una nube que no responde no puede dejar la app en blanco.
+await pSync.unroute('**/*.supabase.co/**');
+await pSync.route('**/*.supabase.co/**', () => new Promise(() => {}));
+await pSync.reload();
+comprobar('sin respuesta de la nube, la app se pinta igual',
+  await pSync.locator('.mision').first().isVisible({ timeout: 2000 }).catch(() => false));
+await ctxSync.close();
+
 
 console.log(ok.join('\n'));
 if (fallos.length) console.log('\n' + fallos.join('\n'));

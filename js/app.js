@@ -11,7 +11,7 @@ import { fechaHoy } from './nucleo/fecha.js';
 import { hayCuentas, recuperar } from './nucleo/supabase.js';
 import {
   sesionGuardada, sesionValida, iniciarSesion, crearCuenta, cerrarSesion,
-  bajarSiGana, subirPartida, cuentaOmitida, omitirCuenta,
+  bajarSiGana, subirPartida, subirPendiente, cuentaOmitida, omitirCuenta,
 } from './cuenta/reglas.js';
 import { notificar, sonar, configurarAnimaciones, configurarAvisos } from './notificaciones/notificaciones.js';
 import { despertarSonido } from './sonido/sintetizador.js';
@@ -132,11 +132,41 @@ function render() {
   renderAjustes(estado);
 }
 
+let avisadoSinGuardar = false;
+
 function actualizar() {
   estado.actualizado = Date.now();
-  guardar(estado);
+  if (guardar(estado)) {
+    avisadoSinGuardar = false;
+  } else if (!avisadoSinGuardar) {
+    // Almacenamiento lleno o bloqueado (modo privado): mejor saberlo hoy que
+    // descubrir mañana que el progreso no se quedó.
+    avisadoSinGuardar = true;
+    notificar({
+      titulo: 'NO SE PUDO GUARDAR',
+      lineas: [
+        { texto: 'El navegador no deja guardar el progreso en este aparato.', destacado: true },
+        { texto: 'Descarga una copia desde la configuración para no perderlo.' },
+      ],
+      tipo: 'peligro',
+      boton: 'ENTENDIDO',
+    });
+  }
   subirPartida(estado); // best-effort: sin sesión o sin red, no hace nada
   render();
+}
+
+/**
+ * Trae la partida de la nube si es más reciente que la de aquí. Tiene que ir
+ * antes de cualquier guardado: guardar sella la hora de ahora y, sin bajar
+ * primero, este aparato pisaría lo que hiciste en otro.
+ */
+async function traerRemoto(sinPropia = false) {
+  const remoto = await bajarSiGana(estado, sinPropia);
+  if (!remoto) return false;
+  estado = normalizar(remoto);
+  guardar(estado);
+  return true;
 }
 
 function pitido(tipo) {
@@ -934,8 +964,11 @@ elAjustes.btnExportar.addEventListener('click', () => {
   const enlace = document.createElement('a');
   enlace.href = URL.createObjectURL(blob);
   enlace.download = `sistema-${fechaHoy()}.json`;
+  document.body.append(enlace);
   enlace.click();
-  URL.revokeObjectURL(enlace.href);
+  enlace.remove();
+  // Safari cancela la descarga si la URL se revoca en el mismo instante.
+  setTimeout(() => URL.revokeObjectURL(enlace.href), 10000);
 });
 
 elAjustes.btnImportar.addEventListener('click', () => elAjustes.archivoImportar.click());
@@ -944,7 +977,15 @@ elAjustes.archivoImportar.addEventListener('change', async (evento) => {
   const archivo = evento.target.files?.[0];
   if (!archivo) return;
   try {
-    estado = importar(await archivo.text());
+    const copia = importar(await archivo.text());
+    if (!confirm(
+      `Se sustituirá tu progreso actual (nivel ${estado.jugador.nivel}) por el de la copia `
+      + `(nivel ${copia.jugador.nivel}). ¿Continuar?`,
+    )) {
+      evento.target.value = '';
+      return;
+    }
+    estado = copia;
     comprobarDia();
     revisarSemana(estado);
     actualizar();
@@ -978,7 +1019,7 @@ async function unirPartidas() {
     actualizar();
     return 'Sesión iniciada. Recuperada tu partida.';
   }
-  await subirPartida(estado);
+  await subirPartida(estado, { inmediato: true });
   return 'Sesión iniciada. Tu partida ya está a salvo.';
 }
 
@@ -1100,10 +1141,15 @@ setInterval(() => {
   actualizar();
 }, 30000);
 
-// Al volver a la app tras dejarla en segundo plano, revisamos la fecha.
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState !== 'visible') return;
+// Al esconder la app se sube lo pendiente: en el móvil puede no volver a abrirse.
+// Al volver, primero lo que llegó de otro aparato y luego la fecha.
+document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState !== 'visible') {
+    subirPendiente();
+    return;
+  }
   renderReloj();
+  await traerRemoto();
   const resumen = comprobarDia();
   if (resumen) {
     avisarMisionDiaria();
@@ -1111,6 +1157,8 @@ document.addEventListener('visibilitychange', () => {
   }
   actualizar();
 });
+
+window.addEventListener('pagehide', subirPendiente);
 
 /* ------------------------------ arranque ------------------------------ */
 
@@ -1122,12 +1170,15 @@ async function arrancar() {
   // Con sesión iniciada, la partida de la nube manda cuando es más reciente
   // que la de aquí: así lo que marcaste en otro aparato llega a este. Sin
   // sesión, o sin red, se juega con lo local y no se pierde nada.
+  // Lo local se pinta ya (sin guardar: eso sellaría la hora antes de bajar):
+  // la red no puede dejar la pantalla en blanco.
+  render();
+  renderReloj();
   refrescarCuenta();
   if (hayCuentas() && !sesionGuardada() && sinPartidaPropia && !cuentaOmitida()) {
     await darLaBienvenida();
   }
-  const remoto = await bajarSiGana(estado, sinPartidaPropia);
-  if (remoto) estado = normalizar(remoto);
+  await traerRemoto(sinPartidaPropia);
 
   sincronizarModo();
   // La primera vez se abre la incursión sola, a dos meses vista. La fecha se
